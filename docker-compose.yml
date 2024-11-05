@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  collexions-web:
+    build: .
+    network_mode: host  # Use host network mode
+    volumes:
+      - ./app:/app  # Ensure this points to the right directory if you have app files locally
