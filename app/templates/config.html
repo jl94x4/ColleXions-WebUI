@@ -124,8 +124,8 @@
             cursor: pointer;
             padding: 5px 10px;
             font-size: 12px;
-            width: auto;
-            height: 38px; /* Matches the height of the input fields */
+            width: 60px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -147,6 +147,23 @@
         .special-collection label {
             margin-top: 10px;
             font-weight: normal;
+        }
+
+        .remove-special-btn {
+            margin-top: 10px;
+            background-color: #d9534f;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 8px 12px;
+            font-size: 12px;
+            transition: background-color 0.3s ease;
+            width: auto;
+        }
+
+        .remove-special-btn:hover {
+            background-color: #c9302c;
         }
     </style>
 </head>
@@ -240,6 +257,9 @@
                         
                         <label>Collection Names (comma-separated):</label>
                         <input type="text" name="collectionNames[]" value="{{ ', '.join(collection['collection_names']) }}" placeholder="Collection Names">
+
+                        <!-- Remove Button for Special Collection -->
+                        <button type="button" class="remove-special-btn" onclick="removeSpecialCollection(this)">Remove</button>
                     </div>
                 {% endfor %}
             </div>
@@ -294,9 +314,27 @@
             list.appendChild(li);
         }
 
+        function addSpecialCollection() {
+            const list = document.getElementById('specialCollectionsList');
+            const div = document.createElement('div');
+            div.classList.add('special-collection');
+            div.innerHTML = `
+                <label>Start Date:</label><input type="text" name="startDate[]" placeholder="MM-DD">
+                <label>End Date:</label><input type="text" name="endDate[]" placeholder="MM-DD">
+                <label>Collection Names (comma-separated):</label><input type="text" name="collectionNames[]" placeholder="Collection Names">
+                <button type="button" class="remove-special-btn" onclick="removeSpecialCollection(this)">Remove</button>
+            `;
+            list.appendChild(div);
+        }
+
         function removeItem(button) {
             const listItem = button.closest('.list-item');
             listItem.remove();
+        }
+
+        function removeSpecialCollection(button) {
+            const specialCollection = button.closest('.special-collection');
+            specialCollection.remove();
         }
     </script>
 </body>
