@@ -32,10 +32,52 @@
         }
 
         label {
-            display: block;
+            display: flex;
+            align-items: center;
             margin-top: 20px;
             font-weight: bold;
             color: #52616b;
+        }
+
+        .info-icon {
+            font-size: 12px;
+            margin-left: 8px;
+            color: #ffffff;
+            background-color: #b0b0b0;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: background-color 0.3s ease;
+        }
+
+        .info-icon:hover {
+            background-color: #8c8c8c;
+        }
+
+        .info-icon:hover .tooltip {
+            display: block;
+        }
+
+        .tooltip {
+            display: none;
+            position: absolute;
+            top: 25px;
+            left: 0;
+            width: 200px;
+            background-color: #ffffff;
+            color: #333;
+            border: 1px solid #d1d8de;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            text-align: left;
         }
 
         .input-container {
@@ -122,13 +164,12 @@
             border: none;
             border-radius: 50%;
             cursor: pointer;
-            padding: 0;
-            width: 24px;
-            height: 24px;
+            width: 18px;
+            height: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 12px;
             line-height: 1;
             transition: background-color 0.3s ease;
         }
@@ -173,19 +214,31 @@
         <h1>ColleXions Configuration</h1>
         <form action="{{ url_for('config') }}" method="post">
             <!-- Plex URL -->
-            <label for="plexUrl">Plex URL:</label>
+            <label for="plexUrl">Plex URL:
+                <span class="info-icon">i
+                    <span class="tooltip">URL for connecting to your Plex server.</span>
+                </span>
+            </label>
             <div class="input-container">
                 <input type="text" id="plexUrl" name="plexUrl" value="{{ config.get('plex_url', '') }}" placeholder="Enter Plex URL">
             </div>
 
             <!-- Plex Token -->
-            <label for="plexToken">Plex Token:</label>
+            <label for="plexToken">Plex Token:
+                <span class="info-icon">i
+                    <span class="tooltip">Token for authenticating with your Plex server.</span>
+                </span>
+            </label>
             <div class="input-container">
                 <input type="password" id="plexToken" name="plexToken" value="{{ config.get('plex_token', '') }}" placeholder="Enter Plex Token">
             </div>
 
             <!-- Library Names -->
-            <label>Library Names:</label>
+            <label>Library Names:
+                <span class="info-icon">i
+                    <span class="tooltip">List of libraries in your Plex server to include in ColleXions.</span>
+                </span>
+            </label>
             <ul id="libraryList">
                 {% for library in config.get('library_names', []) %}
                     <li class="list-item">
@@ -196,10 +249,23 @@
             </ul>
             <button type="button" class="btn-small" onclick="addLibrary()">Add Library</button>
 
+            <!-- Pinning Interval -->
+            <label for="pinningInterval">Pinning Interval (minutes):
+                <span class="info-icon">i
+                    <span class="tooltip">Interval in minutes for automatically pinning collections.</span>
+                </span>
+            </label>
+            <div class="input-container">
+                <input type="number" id="pinningInterval" name="pinningInterval" value="{{ config.get('pinning_interval', 360) }}" min="0" placeholder="Enter interval in minutes">
+            </div>
+
             <!-- Toggle for Inclusion List -->
             <label>
                 <input type="checkbox" name="use_inclusion_list" value="true" {% if config.get('use_inclusion_list', False) %}checked{% endif %}>
                 Use Inclusion List
+                <span class="info-icon">i
+                    <span class="tooltip">Toggle to include only specified items in the list.</span>
+                </span>
             </label>
 
             <!-- Inclusion List -->
