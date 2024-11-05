@@ -54,9 +54,9 @@ Extract the files in the location you wish to run it from
 
 Run ```pip install -r requirements.txt``` to install dependencies
 
-Update the ```config.json``` file with your Plex URL, token, library names, and exclusion/inclusion lists. 
+Configure the config.json in the Web-UI
 
-Run ```python3 ColleXions.py```
+Run ```python3 /app/run.py```
 
 ## Docker Run
 
