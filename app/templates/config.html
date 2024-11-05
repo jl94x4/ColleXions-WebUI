@@ -295,6 +295,15 @@
                 <input type="number" id="pinningInterval" name="pinningInterval" value="{{ config.get('pinning_interval', 360) }}" min="0" placeholder="Enter interval in minutes">
             </div>
 
+            <!-- Use Inclusion List Toggle -->
+            <label>
+                <input type="checkbox" name="use_inclusion_list" {% if config.get('use_inclusion_list') %} checked {% endif %}>
+                Use Inclusion List
+                <span class="info-icon">i
+                    <span class="tooltip">Check this to enable the inclusion list functionality.</span>
+                </span>
+            </label>
+
             <!-- Toggle for Inclusion List -->
             <label>
                 <button type="button" class="toggle-button" onclick="toggleList('inclusionList')">Toggle Inclusion List ({{ config.inclusion_list | length }})</button>
