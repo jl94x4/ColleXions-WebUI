@@ -116,24 +116,25 @@
             box-sizing: border-box;
         }
 
-        .remove-btn {
-            background-color: #3b6978;
+        .minus-btn {
+            background-color: #d9534f;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 50%;
             cursor: pointer;
-            padding: 5px 10px;
-            font-size: 12px;
-            width: 60px;
-            height: 32px;
+            padding: 0;
+            width: 24px;
+            height: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 16px;
+            line-height: 1;
             transition: background-color 0.3s ease;
         }
 
-        .remove-btn:hover {
-            background-color: #2d4d5b;
+        .minus-btn:hover {
+            background-color: #c9302c;
         }
 
         .special-collection {
@@ -189,7 +190,7 @@
                 {% for library in config.get('library_names', []) %}
                     <li class="list-item">
                         <input type="text" name="library_names[]" value="{{ library }}" placeholder="Library Name">
-                        <button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>
+                        <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
                     </li>
                 {% endfor %}
             </ul>
@@ -207,7 +208,7 @@
                 {% for item in config.get('inclusion_list', []) %}
                     <li class="list-item">
                         <input type="text" name="inclusion_list[]" value="{{ item }}" placeholder="Inclusion Item">
-                        <button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>
+                        <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
                     </li>
                 {% endfor %}
             </ul>
@@ -219,17 +220,11 @@
                 {% for item in config.get('exclusion_list', []) %}
                     <li class="list-item">
                         <input type="text" name="exclusion_list[]" value="{{ item }}" placeholder="Exclusion Item">
-                        <button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>
+                        <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
                     </li>
                 {% endfor %}
             </ul>
             <button type="button" class="btn-small" onclick="addExclusion()">Add Exclusion Item</button>
-
-            <!-- Pinning Interval -->
-            <label for="pinningInterval">Pinning Interval (seconds):</label>
-            <div class="input-container">
-                <input type="number" id="pinningInterval" name="pinningInterval" value="{{ config.get('pinning_interval', 21600) }}" min="0" placeholder="Enter interval in seconds">
-            </div>
 
             <!-- Number of Collections to Pin -->
             <label>Number of Collections to Pin:</label>
@@ -238,7 +233,7 @@
                     <li class="list-item">
                         <input type="text" name="collectionsToPinLibrary[]" value="{{ library }}" placeholder="Library Name">
                         <input type="number" name="collectionsToPinCount[]" value="{{ count }}" min="1" placeholder="Count">
-                        <button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>
+                        <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
                     </li>
                 {% endfor %}
             </ul>
@@ -282,7 +277,7 @@
             const li = document.createElement('li');
             li.classList.add('list-item');
             li.innerHTML = '<input type="text" name="library_names[]" placeholder="New Library Name">' +
-                           '<button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>';
+                           '<button type="button" class="minus-btn" onclick="removeItem(this)">−</button>';
             list.appendChild(li);
         }
 
@@ -291,7 +286,7 @@
             const li = document.createElement('li');
             li.classList.add('list-item');
             li.innerHTML = '<input type="text" name="inclusion_list[]" placeholder="Inclusion Item">' +
-                           '<button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>';
+                           '<button type="button" class="minus-btn" onclick="removeItem(this)">−</button>';
             list.appendChild(li);
         }
 
@@ -300,7 +295,7 @@
             const li = document.createElement('li');
             li.classList.add('list-item');
             li.innerHTML = '<input type="text" name="exclusion_list[]" placeholder="Exclusion Item">' +
-                           '<button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>';
+                           '<button type="button" class="minus-btn" onclick="removeItem(this)">−</button>';
             list.appendChild(li);
         }
 
@@ -310,7 +305,7 @@
             li.classList.add('list-item');
             li.innerHTML = '<input type="text" name="collectionsToPinLibrary[]" placeholder="Library Name">' +
                            '<input type="number" name="collectionsToPinCount[]" placeholder="Count" min="1">' +
-                           '<button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>';
+                           '<button type="button" class="minus-btn" onclick="removeItem(this)">−</button>';
             list.appendChild(li);
         }
 
