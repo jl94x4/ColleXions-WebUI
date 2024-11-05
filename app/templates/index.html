@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ColleXions Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        /* General Styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e7ecef;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: flex-end;
+            padding: 10px;
+            background-color: #3b6978;
+            color: white;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .navbar a {
+            color: white;
+            margin-left: 20px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-between;
+        }
+
+        .card {
+            flex: 1 1 30%;
+            min-width: 280px;
+            padding: 20px;
+            border-radius: 12px;
+            background-color: #f5f7fa;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: scale(1.03);
+        }
+
+        .card h2 {
+            font-size: 22px;
+            color: #52616b;
+            margin-bottom: 10px;
+        }
+
+        .card p {
+            font-size: 16px;
+            color: #5d6d7e;
+        }
+
+        .pinned-item {
+            background-color: #e0f4f1;
+            padding: 8px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .countdown-timer {
+            font-size: 20px;
+            font-weight: bold;
+            color: #6c8a93;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation Bar -->
+        <div class="navbar">
+            <a href="/">Dashboard</a>
+            <a href="/config">Configuration</a>
+        </div>
+
+        <h1>ColleXions Dashboard</h1>
+        
+        <!-- Section with Cards -->
+        <div class="section">
+
+            <!-- Previously Pinned Collections Card -->
+            <div class="card">
+                <h2>Previously Pinned Collections</h2>
+                {% if previously_pinned %}
+                    {% for item in previously_pinned %}
+                        <div class="pinned-item">{{ item }}</div>
+                    {% endfor %}
+                {% else %}
+                    <p>No previously pinned collections.</p>
+                {% endif %}
+            </div>
+
+            <!-- Currently Pinned Collections Card -->
+            <div class="card">
+                <h2>Currently Pinned Collections</h2>
+                {% if currently_pinned %}
+                    {% for item in currently_pinned %}
+                        <div class="pinned-item">{{ item }}</div>
+                    {% endfor %}
+                {% else %}
+                    <p>No collections currently pinned.</p>
+                {% endif %}
+            </div>
+
+            <!-- Next Run Interval Card -->
+            <div class="card">
+                <h2>Time Until Next Run</h2>
+                {% if next_run_interval %}
+                    <p class="countdown-timer">{{ next_run_interval }} remaining</p>
+                {% else %}
+                    <p>No scheduled interval set.</p>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>

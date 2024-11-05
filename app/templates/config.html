@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ColleXions Configuration</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #e7ecef; color: #333; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        h1 { color: #3b6978; text-align: center; }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #52616b; }
+        input[type="text"], input[type="number"], input[type="password"] { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 15px; margin-top: 20px; background-color: #4da6ff; color: #fff; border: none; cursor: pointer; border-radius: 5px; }
+        ul { list-style: none; padding: 0; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ColleXions Configuration</h1>
+        <form action="{{ url_for('config') }}" method="post">
+            <label for="plexUrl">Plex URL:</label>
+            <input type="text" id="plexUrl" name="plexUrl" value="{{ config.get('plex_url', '') }}">
+
+            <label for="plexToken">Plex Token:</label>
+            <input type="password" id="plexToken" name="plexToken" value="{{ config.get('plex_token', '') }}">
+
+            <label>Library Names:</label>
+            <ul id="libraryList">
+                {% for library in config.get('library_names', []) %}
+                    <li><input type="text" name="library_names[]" value="{{ library }}"></li>
+                {% endfor %}
+            </ul>
+            <button type="button" onclick="addLibrary()">Add Library</button>
+
+            <label for="pinningInterval">Pinning Interval (seconds):</label>
+            <input type="number" id="pinningInterval" name="pinningInterval" value="{{ config.get('pinning_interval', 21600) }}">
+
+            <label>Number of Collections to Pin:</label>
+            <ul id="collectionsToPinList">
+                {% for library, count in config.get('number_of_collections_to_pin', {}).items() %}
+                    <li>
+                        <input type="text" name="collectionsToPinLibrary[]" value="{{ library }}" placeholder="Library Name">
+                        <input type="number" name="collectionsToPinCount[]" value="{{ count }}" min="1">
+                    </li>
+                {% endfor %}
+            </ul>
+            <button type="button" onclick="addCollection()">Add Collection to Pin</button>
+
+            <label>Special Collections:</label>
+            <ul id="specialCollectionsList">
+                {% for collection in config.get('special_collections', []) %}
+                    <li>
+                        <label>Start Date:</label>
+                        <input type="text" name="startDate[]" value="{{ collection['start_date'] }}">
+                        <label>End Date:</label>
+                        <input type="text" name="endDate[]" value="{{ collection['end_date'] }}">
+                        <label>Collection Names (comma-separated):</label>
+                        <input type="text" name="collectionNames[]" value="{{ ', '.join(collection['collection_names']) }}">
+                    </li>
+                {% endfor %}
+            </ul>
+            <button type="button" onclick="addSpecialCollection()">Add Special Collection</button>
+
+            <button type="submit">Save Configuration</button>
+        </form>
+    </div>
+    <script>
+        function addLibrary() { /* JavaScript functions for adding/removing items */ }
+        function addCollection() { /* As before */ }
+        function addSpecialCollection() { /* As before */ }
+    </script>
+</body>
+</html>
