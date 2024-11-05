@@ -345,26 +345,29 @@
             </ul>
             <button type="button" class="btn-small" onclick="addCollection()">Add Collection to Pin</button>
 
-            <!-- Special Collections -->
+            <!-- Collapsible Special Collections Section -->
             <label>Special Collections:</label>
-            <div id="specialCollectionsList">
-                {% for collection in config.get('special_collections', []) %}
-                    <div class="special-collection">
-                        <label>Start Date:</label>
-                        <input type="text" name="startDate[]" value="{{ collection['start_date'] }}" placeholder="MM-DD">
-                        
-                        <label>End Date:</label>
-                        <input type="text" name="endDate[]" value="{{ collection['end_date'] }}" placeholder="MM-DD">
-                        
-                        <label>Collection Names (comma-separated):</label>
-                        <input type="text" name="collectionNames[]" value="{{ ', '.join(collection['collection_names']) }}" placeholder="Collection Names">
+            <button type="button" class="toggle-button" onclick="toggleSection('specialCollectionsSection')">Toggle Special Collections</button>
+            <div id="specialCollectionsSection" style="display: none;">
+                <div id="specialCollectionsList">
+                    {% for collection in config.get('special_collections', []) %}
+                        <div class="special-collection">
+                            <label>Start Date:</label>
+                            <input type="text" name="startDate[]" value="{{ collection['start_date'] }}" placeholder="MM-DD">
+                            
+                            <label>End Date:</label>
+                            <input type="text" name="endDate[]" value="{{ collection['end_date'] }}" placeholder="MM-DD">
+                            
+                            <label>Collection Names (comma-separated):</label>
+                            <input type="text" name="collectionNames[]" value="{{ ', '.join(collection['collection_names']) }}" placeholder="Collection Names">
 
-                        <!-- Remove Button for Special Collection -->
-                        <button type="button" class="remove-special-btn" onclick="removeSpecialCollection(this)">Remove</button>
-                    </div>
-                {% endfor %}
+                            <!-- Remove Button for Special Collection -->
+                            <button type="button" class="remove-special-btn" onclick="removeSpecialCollection(this)">Remove</button>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button type="button" class="btn-small" onclick="addSpecialCollection()">Add Special Collection</button>
             </div>
-            <button type="button" class="btn-small" onclick="addSpecialCollection()">Add Special Collection</button>
 
             <!-- Discord Webhook URL -->
             <label for="discordWebhook">Discord Webhook URL:</label>
