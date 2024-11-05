@@ -33,28 +33,32 @@ def save_config(config_data):
 
 # Load last 5 collections from selected_collections.json
 def load_recent_collections():
-    try:
-        if os.path.exists(SELECTED_COLLECTIONS_PATH):
-            with open(SELECTED_COLLECTIONS_PATH, 'r') as f:
-                collections = json.load(f)
-                latest_date = max(collections.keys(), default=None)
-                return collections[latest_date] if latest_date else []
-    except Exception as e:
-        app.logger.error(f"Error loading recent collections: {e}")
-        return []# Load data for the dashboard, including interval and selected collections
+    if os.path.exists(SELECTED_COLLECTIONS_PATH):
+        with open(SELECTED_COLLECTIONS_PATH, 'r') as f:
+            collections = json.load(f)
+            # Return the last 5 entries
+            return collections[-5:] if len(collections) > 5 else collections
+    return []
+
+# Load data for the dashboard, including interval and selected collections
 def load_data():
+    # Load interval from config
     config_data = load_config()
     next_run_interval = config_data.get("next_run_interval", "No interval set")
     
+    # Load last 5 selected collections
     previously_pinned = load_recent_collections()
     
-    currently_pinned = [previously_pinned[-1]] if previously_pinned else []  # Safely access last item
-    
+    # Determine currently pinned collection (last one from selected_collections.json)
+    currently_pinned = [previously_pinned[-1]] if previously_pinned else []
+
     return {
-        "previously_pinned": previously_pinned[:-1] if len(previously_pinned) > 1 else previously_pinned,
+        "previously_pinned": previously_pinned[:-1],  # All but the latest as previously pinned
         "currently_pinned": currently_pinned,
         "next_run_interval": next_run_interval
-    }# Home page route displaying the dashboard
+    }
+
+# Home page route displaying the dashboard
 @app.route('/')
 def home():
     # Load data for the dashboard
@@ -76,12 +80,14 @@ def config():
         library_names = request.form.getlist('library_names[]')
         collections_to_pin_libraries = request.form.getlist('collectionsToPinLibrary[]')
         collections_to_pin_counts = request.form.getlist('collectionsToPinCount[]')
+        next_run_interval = request.form.get('nextRunInterval')  # Get pinning interval
 
         # Build the data to save
         config_data = load_config()
         config_data['plex_url'] = plex_url
         config_data['plex_token'] = plex_token
         config_data['library_names'] = library_names
+        config_data['next_run_interval'] = next_run_interval  # Save pinning interval
 
         # Combine collections to pin libraries and counts
         config_data['number_of_collections_to_pin'] = {
@@ -90,6 +96,7 @@ def config():
 
         # Save the configuration
         save_config(config_data)
+
         return redirect(url_for('config'))
 
     # GET request: Load the config data and render the config page
@@ -105,6 +112,7 @@ def status():
         "currently_pinned": data.get("currently_pinned", []),
         "next_run_interval": data.get("next_run_interval", "No interval set")
     })
+
 if __name__ == '__main__':
     try:
         app.run(host='0.0.0.0', port=2000)
