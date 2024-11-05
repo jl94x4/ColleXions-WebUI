@@ -333,7 +333,11 @@
             <button type="button" class="btn-small" onclick="addExclusion()">Add Exclusion Item</button>
 
             <!-- Number of Collections to Pin -->
-            <label>Number of Collections to Pin:</label>
+            <label>Number of Collections to Pin:
+                <span class="info-icon">i
+                    <span class="tooltip">This is the number of collections you wish to pin from each listed Library.</span>
+                </span>
+            </label>
             <ul id="collectionsToPinList">
                 {% for library, count in config.get('number_of_collections_to_pin', {}).items() %}
                     <li class="list-item">
