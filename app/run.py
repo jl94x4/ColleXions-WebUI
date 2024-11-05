@@ -1,11 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for
 import json
 import os
+import subprocess
 
 app = Flask(__name__)
 
 # Set the path to your config.json file
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
+COLLEXIONS_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), 'collexions.py')  # Update this if necessary
 
 def load_config():
     """Loads configuration data from config.json"""
@@ -76,4 +78,11 @@ def config():
     return render_template('config.html', config=config)
 
 if __name__ == '__main__':
+    # Start collexions.py in a separate process if it exists
+    if os.path.exists(COLLEXIONS_SCRIPT_PATH):
+        subprocess.Popen(['python3', COLLEXIONS_SCRIPT_PATH])
+    else:
+        print(f"Error: {COLLEXIONS_SCRIPT_PATH} does not exist. Please check the path.")
+        
+    # Start the Flask app
     app.run(host='0.0.0.0', port=2000, debug=True)
