@@ -2,8 +2,8 @@ import json
 import os
 
 # Define the path to the shared configuration file and logs
-CONFIG_PATH = '/app/data/config.json'
-LOG_PATH = '/app/data/collexions.log'
+CONFIG_PATH = '/app/config.json'
+LOG_PATH = '/logs/collexions.log'
 
 def load_config():
     """Load ColleXions configuration from the shared volume."""
