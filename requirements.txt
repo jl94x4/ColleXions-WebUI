@@ -1,4 +1,6 @@
 Flask==2.0.3
 Werkzeug==2.0.3
-plexapi
 requests
+plexapi
+schedule
+pyyaml

@@ -1,8 +1,10 @@
-// Fetch status on load
-fetch('/api/status')
-    .then(response => response.json())
-    .then(data => {
-        const statusDiv = document.getElementById('status');
-        statusDiv.innerHTML = JSON.stringify(data, null, 2); // For simple display
-    })
-    .catch(error => console.error('Error fetching status:', error));
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route('/api/status')
+def status():
+    return jsonify({"message": "API is working"})  # Basic test response
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=2000)

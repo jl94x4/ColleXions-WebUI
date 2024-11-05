@@ -28,7 +28,7 @@ logging.basicConfig(
 )
 
 # Configuration file path
-CONFIG_FILE = '/data/config.json'
+CONFIG_FILE = 'data/config.json'
 SELECTED_COLLECTIONS_FILE = 'selected_collections.json'
 
 def load_selected_collections():

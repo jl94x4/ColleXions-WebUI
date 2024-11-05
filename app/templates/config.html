@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ColleXions Dashboard</title>
+    <title>ColleXions Configuration</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
         /* General Styling */
         body {
             font-family: Arial, sans-serif;
-            background-color: #e7ecef;
+            background-color: #e7ecef; /* Soft background */
             color: #333;
             display: flex;
             justify-content: center;
@@ -17,124 +17,232 @@
 
         .container {
             width: 100%;
-            max-width: 1000px;
-            background-color: #ffffff;
+            max-width: 800px;
+            background-color: #ffffff; /* White background for contrast */
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .navbar {
-            display: flex;
-            justify-content: flex-end;
-            padding: 10px;
-            background-color: #3b6978;
-            color: white;
-            border-radius: 8px 8px 0 0;
+        h1 {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #3b6978; /* Muted teal for header */
         }
 
-        .navbar a {
-            color: white;
-            margin-left: 20px;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .section {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: space-between;
-        }
-
-        .card {
-            flex: 1 1 30%;
-            min-width: 280px;
-            padding: 20px;
-            border-radius: 12px;
-            background-color: #f5f7fa;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s;
-        }
-
-        .card:hover {
-            transform: scale(1.03);
-        }
-
-        .card h2 {
-            font-size: 22px;
-            color: #52616b;
-            margin-bottom: 10px;
-        }
-
-        .card p {
-            font-size: 16px;
-            color: #5d6d7e;
-        }
-
-        .pinned-item {
-            background-color: #e0f4f1;
-            padding: 8px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-
-        .countdown-timer {
+        h2, h3 {
             font-size: 20px;
+            color: #52616b; /* Soft gray-blue for subheadings */
+            border-bottom: 2px solid #d1d8de;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: inline-block;
+            width: 100%;
             font-weight: bold;
-            color: #6c8a93;
+            margin-bottom: 5px;
+            color: #5d6d7e; /* Soft gray */
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #d1d8de;
+            border-radius: 4px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+            background-color: #f5f7fa; /* Soft input background */
+        }
+
+        input:focus {
+            border-color: #90a4ae; /* Soft teal-blue focus color */
+            outline: none;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            background-color: #6c8a93; /* Muted green-blue */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #506a73; /* Darker shade on hover */
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        /* List Styling */
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Navigation Bar -->
-        <div class="navbar">
-            <a href="/">Dashboard</a>
-            <a href="/config">Configuration</a>
-        </div>
+        <h1>ColleXions Configuration</h1>
+        <form id="configForm" action="{{ url_for('config') }}" method="post" onsubmit="return showSaveAlert()">
+            <!-- Plex URL and Token -->
+            <div class="form-group">
+                <label for="plexUrl">Plex URL:</label>
+                <input type="text" id="plexUrl" name="plexUrl" value="{{ config.get('plex_url', '') }}" required>
+            </div>
+            <div class="form-group">
+                <label for="plexToken">Plex Token:</label>
+                <input type="password" id="plexToken" name="plexToken"
+                       placeholder="{{ '????????' if config.get('plex_token') else '' }}" 
+                       value="{{ config.get('plex_token', '') }}">
+            </div>
 
-        <h1>ColleXions Dashboard</h1>
-        
-        <!-- Section with Cards -->
-        <div class="section">
-
-            <!-- Previously Pinned Collections Card -->
-            <div class="card">
-                <h2>Previously Pinned Collections</h2>
-                {% if previously_pinned %}
-                    {% for item in previously_pinned %}
-                        <div class="pinned-item">{{ item }}</div>
+            <!-- Plex Libraries -->
+            <h2>Plex Libraries</h2>
+            <div id="plexLibrariesSection">
+                <ul id="plexLibrariesList">
+                    {% for library in config.get('library_names', []) %}
+                        <li>
+                            <input type="text" name="library_names[]" value="{{ library }}">
+                            <button type="button" class="btn btn-small" onclick="removeLibrary(this)">Remove</button>
+                        </li>
                     {% endfor %}
-                {% else %}
-                    <p>No previously pinned collections.</p>
-                {% endif %}
+                </ul>
+                <button type="button" class="btn" onclick="addLibrary()">Add Library</button>
             </div>
 
-            <!-- Currently Pinned Collections Card -->
-            <div class="card">
-                <h2>Currently Pinned Collections</h2>
-                {% if currently_pinned %}
-                    {% for item in currently_pinned %}
-                        <div class="pinned-item">{{ item }}</div>
-                    {% endfor %}
-                {% else %}
-                    <p>No collections currently pinned.</p>
-                {% endif %}
-            </div>
-
-            <!-- Next Run Interval Card -->
-            <div class="card">
-                <h2>Time Until Next Run</h2>
-                {% if next_run_interval %}
-                    <p class="countdown-timer">{{ next_run_interval }} remaining</p>
-                {% else %}
-                    <p>No scheduled interval set.</p>
-                {% endif %}
-            </div>
-
-        </div>
+            
+    <!-- Pinning Interval -->
+    <h2>Pinning Interval</h2>
+    <div class="form-group">
+        <label for="pinningInterval">Pinning Interval (seconds):</label>
+        <input type="number" id="pinningInterval" name="pinningInterval" value="{{ config.get('pinning_interval', 21600) }}" min="0" placeholder="Enter interval in seconds">
     </div>
+    
+    <!-- Number of Collections to Pin -->
+    
+            <h2>Number of Collections to Pin</h2>
+            <div id="collectionsToPinSection">
+                <ul id="collectionsToPinList">
+                    {% for library, count in config.get('number_of_collections_to_pin', {}).items() %}
+                        <li>
+                            <input type="text" name="collectionsToPinLibrary[]" value="{{ library }}" placeholder="Library Name">
+                            <input type="number" name="collectionsToPinCount[]" value="{{ count }}" min="1" placeholder="Count">
+                            <button type="button" class="btn btn-small" onclick="removeCollectionPin(this)">Remove</button>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <button type="button" class="btn" onclick="addCollectionToPin()">Add Collection to Pin</button>
+            </div>
+
+            <!-- Special Collections Section -->
+            <h2>Special Collections</h2>
+            <div id="specialCollectionsSection">
+                <ul id="specialCollectionsList">
+                    {% for collection in config.get('special_collections', []) %}
+                        <li>
+                            <div class="form-group">
+                                <label>Start Date:</label>
+                                <input type="text" name="startDate[]" value="{{ collection['start_date'] }}">
+                            </div>
+                            <div class="form-group">
+                                <label>End Date:</label>
+                                <input type="text" name="endDate[]" value="{{ collection['end_date'] }}">
+                            </div>
+                            <div class="form-group">
+                                <label>Collection Names (comma-separated):</label>
+                                <input type="text" name="collectionNames[]" value="{{ ', '.join(collection['collection_names']) }}">
+                                <button type="button" class="btn btn-small" onclick="removeSpecialCollection(this)">Remove</button>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <button type="button" class="btn" onclick="addSpecialCollection()">Add Special Collection</button>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-group">
+                <button type="submit" class="btn">Save Configuration</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="{{ url_for('static', filename='config.js') }}"></script>
+    <script>
+        function addLibrary() {
+            const libraryList = document.getElementById('plexLibrariesList');
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `<input type="text" name="library_names[]" value=""><button type="button" class="btn btn-small" onclick="removeLibrary(this)">Remove</button>`;
+            libraryList.appendChild(listItem);
+        }
+
+        function removeLibrary(button) {
+            const listItem = button.parentNode;
+            listItem.remove();
+        }
+
+        function addCollectionToPin() {
+            const collectionsList = document.getElementById('collectionsToPinList');
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `
+                <input type="text" name="collectionsToPinLibrary[]" placeholder="Library Name">
+                <input type="number" name="collectionsToPinCount[]" min="1" placeholder="Count">
+                <button type="button" class="btn btn-small" onclick="removeCollectionPin(this)">Remove</button>
+            `;
+            collectionsList.appendChild(listItem);
+        }
+
+        function removeCollectionPin(button) {
+            const listItem = button.parentNode;
+            listItem.remove();
+        }
+
+        function addSpecialCollection() {
+            const collectionList = document.getElementById('specialCollectionsList');
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `
+                <div class="form-group"><label>Start Date:</label><input type="text" name="startDate[]"></div>
+                <div class="form-group"><label>End Date:</label><input type="text" name="endDate[]"></div>
+                <div class="form-group"><label>Collection Names (comma-separated):</label><input type="text" name="collectionNames[]"></div>
+            `;
+            collectionList.appendChild(listItem);
+        }
+
+        function removeSpecialCollection(button) {
+            const listItem = button.parentNode.parentNode;
+            listItem.remove();
+        }
+
+        function showSaveAlert() {
+            alert("Configuration saved successfully!");
+            return true; // Allow form submission to proceed
+        }
+    </script>
 </body>
 </html>

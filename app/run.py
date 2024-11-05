@@ -49,8 +49,12 @@ def load_data():
     # Load last 5 selected collections
     previously_pinned = load_recent_collections()
     
-    # Determine currently pinned collection (last one from selected_collections.json)
-    currently_pinned = [previously_pinned[-1]] if previously_pinned else []
+    # Ensure previously_pinned is a list and contains at least one item
+if isinstance(previously_pinned, list) and len(previously_pinned) > 0:
+    currently_pinned = [previously_pinned[-1]]
+else:
+    currently_pinned = []
+
 
     return {
         "previously_pinned": previously_pinned[:-1],  # All but the latest as previously pinned
@@ -118,3 +122,44 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=2000)
     except Exception as e:
         print(f"Failed to start Flask app: {e}")
+
+
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route('/api/status')
+def status():
+    try:
+        # Example data to confirm the route works, replace with actual status information
+        data = {
+            "status": "running",
+            "uptime": "48 hours",
+            "pinned_collections": ["Collection A", "Collection B"]
+        }
+        return jsonify(data)
+    except Exception as e:
+        app.logger.error(f"Error fetching status: {e}")
+        return jsonify({"error": "Failed to fetch status"}), 500
+
+
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route('/api/status')
+def status():
+    try:
+        # Basic placeholder data to confirm the route works
+        data = {
+            "status": "running",
+            "uptime": "48 hours",
+            "pinned_collections": ["Collection A", "Collection B"]
+        }
+        return jsonify(data)
+    except Exception as e:
+        app.logger.error(f"Error fetching status: {e}")
+        return jsonify({"error": "Failed to fetch status"}), 500
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=2000)
