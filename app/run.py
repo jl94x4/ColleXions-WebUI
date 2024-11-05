@@ -33,32 +33,28 @@ def save_config(config_data):
 
 # Load last 5 collections from selected_collections.json
 def load_recent_collections():
-    if os.path.exists(SELECTED_COLLECTIONS_PATH):
-        with open(SELECTED_COLLECTIONS_PATH, 'r') as f:
-            collections = json.load(f)
-            # Return the last 5 entries
-            return collections[-5:] if len(collections) > 5 else collections
-    return []
-
-# Load data for the dashboard, including interval and selected collections
+    try:
+        if os.path.exists(SELECTED_COLLECTIONS_PATH):
+            with open(SELECTED_COLLECTIONS_PATH, 'r') as f:
+                collections = json.load(f)
+                latest_date = max(collections.keys(), default=None)
+                return collections[latest_date] if latest_date else []
+    except Exception as e:
+        app.logger.error(f"Error loading recent collections: {e}")
+        return []# Load data for the dashboard, including interval and selected collections
 def load_data():
-    # Load interval from config
     config_data = load_config()
     next_run_interval = config_data.get("next_run_interval", "No interval set")
     
-    # Load last 5 selected collections
     previously_pinned = load_recent_collections()
     
-    # Determine currently pinned collection (last one from selected_collections.json)
-    currently_pinned = [previously_pinned[-1]] if previously_pinned else []
-
+    currently_pinned = [previously_pinned[-1]] if previously_pinned else []  # Safely access last item
+    
     return {
-        "previously_pinned": previously_pinned[:-1],  # All but the latest as previously pinned
+        "previously_pinned": previously_pinned[:-1] if len(previously_pinned) > 1 else previously_pinned,
         "currently_pinned": currently_pinned,
         "next_run_interval": next_run_interval
-    }
-
-# Home page route displaying the dashboard
+    }# Home page route displaying the dashboard
 @app.route('/')
 def home():
     # Load data for the dashboard
