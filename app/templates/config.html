@@ -24,11 +24,26 @@
             box-sizing: border-box;
         }
 
-        h1 {
-            color: #3b6978;
-            font-size: 26px;
+        /* Header styling */
+        .header {
             text-align: center;
-            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #3b6978;
+            color: #ffffff;
+            border-radius: 8px;
+            font-size: 28px;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .header:after {
+            content: "";
+            display: block;
+            width: 80px;
+            height: 3px;
+            background-color: #f0f4f8;
+            margin: 10px auto 0;
+            border-radius: 2px;
         }
 
         label {
@@ -212,7 +227,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>ColleXions Configuration</h1>
+        <div class="header">ColleXions Configuration</div>
         <form action="{{ url_for('config') }}" method="post">
             <!-- Plex URL -->
             <label for="plexUrl">Plex URL:
