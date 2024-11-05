@@ -1,18 +1,24 @@
 # Use Python image
 FROM python:3.9-slim
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
-# Copy the application code into the container
+# Copy application code into the container
 COPY app/ /app/
-COPY requirements.txt /app/requirements.txt
+
+# Copy requirements file
+COPY requirements.txt /app/
 
 # Install required Python packages
-RUN pip install -r /app/requirements.txt
+RUN pip install -r requirements.txt
+
+# Install and configure supervisord to run multiple processes
+RUN apt-get update && apt-get install -y supervisor
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Expose the Flask port
 EXPOSE 2000
 
-# Start the Flask application
-CMD ["python3", "run.py"]
+# Start supervisord to run both processes
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
