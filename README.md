@@ -1,13 +1,13 @@
 [![Build Status](https://scrutinizer-ci.com/g/jl94x4/ColleXions/badges/build.png?b=main)](https://scrutinizer-ci.com/g/jl94x4/ColleXions/build-status/main) [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/jl94x4/ColleXions/badges/quality-score.png?b=main)](https://scrutinizer-ci.com/g/jl94x4/ColleXions/?branch=main)
 
+## Preview
+
+![image](https://github.com/user-attachments/assets/bf9b6dfa-addd-468f-9fbc-b946e03e579a)
+![image](https://github.com/user-attachments/assets/4b2bae73-af74-4d13-a4cd-12c7edf344a9)
+
 # ColleXions with Web-UI
 ColleXions automates the process of pinning collections to your Plex home screen, making it easier to showcase your favorite content. With customizable features, it enhances your Plex experience by dynamically adjusting what is displayed either controlled or completely randomly - the choice is yours. All options are configurable with a Web-UI.
 Includes collaboration with @[defluophoenix](https://github.com/jl94x4/ColleXions/commits?author=defluophoenix)
-
-## Preview
-
-![image](https://github.com/user-attachments/assets/1f30ece4-25d1-428c-8482-fa1d35de17fd)
-
 
 ## Key Features
 - **Randomized Pinning:** ColleXions randomly selects collections to pin each cycle, ensuring that your home screen remains fresh and engaging. This randomness prevents the monotony of static collections, allowing users to discover new content easily.
