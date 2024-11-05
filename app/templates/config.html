@@ -266,21 +266,24 @@
                 <input type="password" id="plexToken" name="plexToken" value="{{ config.get('plex_token', '') }}" placeholder="Enter Plex Token">
             </div>
 
-            <!-- Library Names -->
+            <!-- Collapsible Library Names Section -->
             <label>Library Names:
                 <span class="info-icon">i
                     <span class="tooltip">List of libraries in your Plex server to include in ColleXions.</span>
                 </span>
             </label>
-            <ul id="libraryList">
-                {% for library in config.get('library_names', []) %}
-                    <li class="list-item">
-                        <input type="text" name="library_names[]" value="{{ library }}" placeholder="Library Name">
-                        <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
-                    </li>
-                {% endfor %}
-            </ul>
-            <button type="button" class="btn-small" onclick="addLibrary()">Add Library</button>
+            <button type="button" class="toggle-button" onclick="toggleSection('libraryNamesSection')">Toggle Library Names ({{ config.library_names | length }})</button>
+            <div id="libraryNamesSection" style="display: none;">
+                <ul id="libraryList">
+                    {% for library in config.get('library_names', []) %}
+                        <li class="list-item">
+                            <input type="text" name="library_names[]" value="{{ library }}" placeholder="Library Name">
+                            <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <button type="button" class="btn-small" onclick="addLibrary()">Add Library</button>
+            </div>
 
             <!-- Pinning Interval -->
             <label for="pinningInterval">Pinning Interval (minutes):
@@ -432,6 +435,15 @@
                 list.style.display = "block";  // Show the list
             } else {
                 list.style.display = "none";   // Hide the list
+            }
+        }
+
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section.style.display === "none") {
+                section.style.display = "block";  // Show the section
+            } else {
+                section.style.display = "none";   // Hide the section
             }
         }
     </script>
