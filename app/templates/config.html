@@ -24,7 +24,6 @@
             box-sizing: border-box;
         }
 
-        /* Header styling */
         .header {
             text-align: center;
             padding: 20px;
@@ -134,6 +133,24 @@
 
         button:hover {
             background-color: #2d4d5b;
+        }
+
+        /* Styling for toggle buttons */
+        .toggle-button {
+            padding: 10px 15px;
+            background-color: #ffcc00; /* Unique color for toggle buttons */
+            color: #333;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: auto; /* Allow width to fit the text */
+            margin-bottom: 10px;
+        }
+
+        .toggle-button:hover {
+            background-color: #e6b800; /* Darker shade on hover */
         }
 
         ul {
@@ -277,16 +294,9 @@
 
             <!-- Toggle for Inclusion List -->
             <label>
-                <input type="checkbox" name="use_inclusion_list" value="true" {% if config.get('use_inclusion_list', False) %}checked{% endif %}>
-                Use Inclusion List
-                <span class="info-icon">i
-                    <span class="tooltip">Toggle to include only specified items in the list.</span>
-                </span>
+                <button type="button" class="toggle-button" onclick="toggleList('inclusionList')">Toggle Inclusion List ({{ config.inclusion_list | length }})</button>
             </label>
-
-            <!-- Inclusion List -->
-            <label>Inclusion List:</label>
-            <ul id="inclusionList">
+            <ul id="inclusionList" style="display: none;">
                 {% for item in config.get('inclusion_list', []) %}
                     <li class="list-item">
                         <input type="text" name="inclusion_list[]" value="{{ item }}" placeholder="Inclusion Item">
@@ -296,9 +306,11 @@
             </ul>
             <button type="button" class="btn-small" onclick="addInclusion()">Add Inclusion Item</button>
 
-            <!-- Exclusion List -->
-            <label>Exclusion List:</label>
-            <ul id="exclusionList">
+            <!-- Toggle for Exclusion List -->
+            <label>
+                <button type="button" class="toggle-button" onclick="toggleList('exclusionList')">Toggle Exclusion List ({{ config.exclusion_list | length }})</button>
+            </label>
+            <ul id="exclusionList" style="display: none;">
                 {% for item in config.get('exclusion_list', []) %}
                     <li class="list-item">
                         <input type="text" name="exclusion_list[]" value="{{ item }}" placeholder="Exclusion Item">
@@ -412,6 +424,15 @@
         function removeSpecialCollection(button) {
             const specialCollection = button.closest('.special-collection');
             specialCollection.remove();
+        }
+
+        function toggleList(listId) {
+            const list = document.getElementById(listId);
+            if (list.style.display === "none") {
+                list.style.display = "block";  // Show the list
+            } else {
+                list.style.display = "none";   // Hide the list
+            }
         }
     </script>
 </body>
