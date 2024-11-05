@@ -4,69 +4,300 @@
     <meta charset="UTF-8">
     <title>ColleXions Configuration</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #e7ecef; color: #333; padding: 20px; }
-        .container { max-width: 800px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
-        h1 { color: #3b6978; text-align: center; }
-        label { display: block; margin-top: 15px; font-weight: bold; color: #52616b; }
-        input[type="text"], input[type="number"], input[type="password"] { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px; }
-        button { padding: 10px 15px; margin-top: 20px; background-color: #4da6ff; color: #fff; border: none; cursor: pointer; border-radius: 5px; }
-        ul { list-style: none; padding: 0; margin: 0; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: #3b6978;
+            font-size: 26px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #52616b;
+        }
+
+        .input-container {
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 5px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d8de;
+            border-radius: 5px;
+            background-color: #f5f7fa;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            border-color: #3b6978;
+            outline: none;
+        }
+
+        button {
+            padding: 12px 20px;
+            margin-top: 20px;
+            background-color: #3b6978;
+            color: #ffffff;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button:hover {
+            background-color: #2d4d5b;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .btn-small {
+            padding: 8px 12px;
+            margin-top: 10px;
+            background-color: #3b6978;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-small:hover {
+            background-color: #2d4d5b;
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .list-item input[type="text"],
+        .list-item input[type="number"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #d1d8de;
+            border-radius: 5px;
+            background-color: #f5f7fa;
+            box-sizing: border-box;
+        }
+
+        .remove-btn {
+            background-color: #3b6978;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 5px 10px;
+            font-size: 12px;
+            width: auto;
+            height: 38px; /* Matches the height of the input fields */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            background-color: #2d4d5b;
+        }
+
+        .special-collection {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #d1d8de;
+            border-radius: 5px;
+            background-color: #f9fbfc;
+        }
+
+        .special-collection label {
+            margin-top: 10px;
+            font-weight: normal;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>ColleXions Configuration</h1>
         <form action="{{ url_for('config') }}" method="post">
+            <!-- Plex URL -->
             <label for="plexUrl">Plex URL:</label>
-            <input type="text" id="plexUrl" name="plexUrl" value="{{ config.get('plex_url', '') }}">
+            <div class="input-container">
+                <input type="text" id="plexUrl" name="plexUrl" value="{{ config.get('plex_url', '') }}" placeholder="Enter Plex URL">
+            </div>
 
+            <!-- Plex Token -->
             <label for="plexToken">Plex Token:</label>
-            <input type="password" id="plexToken" name="plexToken" value="{{ config.get('plex_token', '') }}">
+            <div class="input-container">
+                <input type="password" id="plexToken" name="plexToken" value="{{ config.get('plex_token', '') }}" placeholder="Enter Plex Token">
+            </div>
 
+            <!-- Library Names -->
             <label>Library Names:</label>
             <ul id="libraryList">
                 {% for library in config.get('library_names', []) %}
-                    <li><input type="text" name="library_names[]" value="{{ library }}"></li>
+                    <li class="list-item">
+                        <input type="text" name="library_names[]" value="{{ library }}" placeholder="Library Name">
+                        <button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>
+                    </li>
                 {% endfor %}
             </ul>
-            <button type="button" onclick="addLibrary()">Add Library</button>
+            <button type="button" class="btn-small" onclick="addLibrary()">Add Library</button>
 
+            <!-- Toggle for Inclusion List -->
+            <label>
+                <input type="checkbox" name="use_inclusion_list" value="true" {% if config.get('use_inclusion_list', False) %}checked{% endif %}>
+                Use Inclusion List
+            </label>
+
+            <!-- Inclusion List -->
+            <label>Inclusion List:</label>
+            <ul id="inclusionList">
+                {% for item in config.get('inclusion_list', []) %}
+                    <li class="list-item">
+                        <input type="text" name="inclusion_list[]" value="{{ item }}" placeholder="Inclusion Item">
+                        <button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>
+                    </li>
+                {% endfor %}
+            </ul>
+            <button type="button" class="btn-small" onclick="addInclusion()">Add Inclusion Item</button>
+
+            <!-- Exclusion List -->
+            <label>Exclusion List:</label>
+            <ul id="exclusionList">
+                {% for item in config.get('exclusion_list', []) %}
+                    <li class="list-item">
+                        <input type="text" name="exclusion_list[]" value="{{ item }}" placeholder="Exclusion Item">
+                        <button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>
+                    </li>
+                {% endfor %}
+            </ul>
+            <button type="button" class="btn-small" onclick="addExclusion()">Add Exclusion Item</button>
+
+            <!-- Pinning Interval -->
             <label for="pinningInterval">Pinning Interval (seconds):</label>
-            <input type="number" id="pinningInterval" name="pinningInterval" value="{{ config.get('pinning_interval', 21600) }}">
+            <div class="input-container">
+                <input type="number" id="pinningInterval" name="pinningInterval" value="{{ config.get('pinning_interval', 21600) }}" min="0" placeholder="Enter interval in seconds">
+            </div>
 
+            <!-- Number of Collections to Pin -->
             <label>Number of Collections to Pin:</label>
             <ul id="collectionsToPinList">
                 {% for library, count in config.get('number_of_collections_to_pin', {}).items() %}
-                    <li>
+                    <li class="list-item">
                         <input type="text" name="collectionsToPinLibrary[]" value="{{ library }}" placeholder="Library Name">
-                        <input type="number" name="collectionsToPinCount[]" value="{{ count }}" min="1">
+                        <input type="number" name="collectionsToPinCount[]" value="{{ count }}" min="1" placeholder="Count">
+                        <button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>
                     </li>
                 {% endfor %}
             </ul>
-            <button type="button" onclick="addCollection()">Add Collection to Pin</button>
+            <button type="button" class="btn-small" onclick="addCollection()">Add Collection to Pin</button>
 
+            <!-- Special Collections -->
             <label>Special Collections:</label>
-            <ul id="specialCollectionsList">
+            <div id="specialCollectionsList">
                 {% for collection in config.get('special_collections', []) %}
-                    <li>
+                    <div class="special-collection">
                         <label>Start Date:</label>
-                        <input type="text" name="startDate[]" value="{{ collection['start_date'] }}">
+                        <input type="text" name="startDate[]" value="{{ collection['start_date'] }}" placeholder="MM-DD">
+                        
                         <label>End Date:</label>
-                        <input type="text" name="endDate[]" value="{{ collection['end_date'] }}">
+                        <input type="text" name="endDate[]" value="{{ collection['end_date'] }}" placeholder="MM-DD">
+                        
                         <label>Collection Names (comma-separated):</label>
-                        <input type="text" name="collectionNames[]" value="{{ ', '.join(collection['collection_names']) }}">
-                    </li>
+                        <input type="text" name="collectionNames[]" value="{{ ', '.join(collection['collection_names']) }}" placeholder="Collection Names">
+                    </div>
                 {% endfor %}
-            </ul>
-            <button type="button" onclick="addSpecialCollection()">Add Special Collection</button>
+            </div>
+            <button type="button" class="btn-small" onclick="addSpecialCollection()">Add Special Collection</button>
 
+            <!-- Discord Webhook URL -->
+            <label for="discordWebhook">Discord Webhook URL:</label>
+            <div class="input-container">
+                <input type="text" id="discordWebhook" name="discordWebhook" value="{{ config.get('discord_webhook_url', '') }}" placeholder="Enter Discord Webhook URL">
+            </div>
+
+            <!-- Save Button -->
             <button type="submit">Save Configuration</button>
         </form>
     </div>
+
     <script>
-        function addLibrary() { /* JavaScript functions for adding/removing items */ }
-        function addCollection() { /* As before */ }
-        function addSpecialCollection() { /* As before */ }
+        function addLibrary() {
+            const list = document.getElementById('libraryList');
+            const li = document.createElement('li');
+            li.classList.add('list-item');
+            li.innerHTML = '<input type="text" name="library_names[]" placeholder="New Library Name">' +
+                           '<button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>';
+            list.appendChild(li);
+        }
+
+        function addInclusion() {
+            const list = document.getElementById('inclusionList');
+            const li = document.createElement('li');
+            li.classList.add('list-item');
+            li.innerHTML = '<input type="text" name="inclusion_list[]" placeholder="Inclusion Item">' +
+                           '<button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>';
+            list.appendChild(li);
+        }
+
+        function addExclusion() {
+            const list = document.getElementById('exclusionList');
+            const li = document.createElement('li');
+            li.classList.add('list-item');
+            li.innerHTML = '<input type="text" name="exclusion_list[]" placeholder="Exclusion Item">' +
+                           '<button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>';
+            list.appendChild(li);
+        }
+
+        function addCollection() {
+            const list = document.getElementById('collectionsToPinList');
+            const li = document.createElement('li');
+            li.classList.add('list-item');
+            li.innerHTML = '<input type="text" name="collectionsToPinLibrary[]" placeholder="Library Name">' +
+                           '<input type="number" name="collectionsToPinCount[]" placeholder="Count" min="1">' +
+                           '<button type="button" class="remove-btn" onclick="removeItem(this)">Remove</button>';
+            list.appendChild(li);
+        }
+
+        function removeItem(button) {
+            const listItem = button.closest('.list-item');
+            listItem.remove();
+        }
     </script>
 </body>
 </html>
