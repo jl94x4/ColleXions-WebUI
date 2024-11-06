@@ -135,7 +135,6 @@
             background-color: #2d4d5b;
         }
 
-        /* Styling for toggle buttons */
         .toggle-button {
             padding: 10px 15px;
             background-color: #ffcc00; /* Unique color for toggle buttons */
@@ -239,6 +238,27 @@
 
         .remove-special-btn:hover {
             background-color: #c9302c;
+        }
+
+        .category-item {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #d1d8de;
+            border-radius: 5px;
+            background-color: #f9fbfc;
+        }
+
+        .category-item input[type="text"] {
+            margin-right: 10px;
+        }
+
+        .category-collection {
+            margin-bottom: 10px;
+        }
+
+        .category-collection .list-item {
+            display: flex;
+            align-items: center;
         }
     </style>
 </head>
@@ -347,7 +367,7 @@
                     </li>
                 {% endfor %}
             </ul>
-            <button type="button" class="btn-small" onclick="addCollection()">Add Collection to Pin</button>
+            <button type="button" class="btn-small" onclick="addCollectionToPin()">Add Collection to Pin</button>
 
             <!-- Collapsible Special Collections Section -->
             <label>Special Collections:</label>
@@ -371,6 +391,63 @@
                     {% endfor %}
                 </div>
                 <button type="button" class="btn-small" onclick="addSpecialCollection()">Add Special Collection</button>
+            </div>
+
+            <!-- Categories Section -->
+            <label>Categories:</label>
+            <button type="button" class="toggle-button" onclick="toggleSection('categoriesSection')">Toggle Categories</button>
+            <div id="categoriesSection" style="display: none;">
+                <div id="moviesSection">
+                    <h4>Movies</h4>
+                    <div id="moviesList">
+                        {% for category, details in config.get('categories', {}).items() %}
+                            <div class="category-item">
+                                <label>Category Name:</label>
+                                <input type="text" name="movie_categories[]" value="{{ category }}" placeholder="Category Name">
+                                <label>Always Call:</label>
+                                <input type="checkbox" name="always_call_{{ category }}" {% if details.always_call %} checked {% endif %}>
+                                <button type="button" class="btn-small" onclick="removeCategory(this)">Remove</button>
+                                <h5>Collections:</h5>
+                                <ul class="category-collection">
+                                    {% for collection in details.collections %}
+                                        <li class="list-item">
+                                            <input type="text" name="{{ category }}_collections[]" value="{{ collection }}" placeholder="Collection Name">
+                                            <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                                <button type="button" class="btn-small" onclick="addMovieCollection(this)">Add Collection</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="btn-small" onclick="addMovieCategory()">Add Movie Category</button>
+                </div>
+
+                <div id="tvShowsSection">
+                    <h4>TV Shows</h4>
+                    <div id="tvShowsList">
+                        {% for category, details in config.get('categories', {}).items() %}
+                            <div class="category-item">
+                                <label>Category Name:</label>
+                                <input type="text" name="tv_show_categories[]" value="{{ category }}" placeholder="Category Name">
+                                <label>Always Call:</label>
+                                <input type="checkbox" name="always_call_{{ category }}" {% if details.always_call %} checked {% endif %}>
+                                <button type="button" class="btn-small" onclick="removeCategory(this)">Remove</button>
+                                <h5>Collections:</h5>
+                                <ul class="category-collection">
+                                    {% for collection in details.collections %}
+                                        <li class="list-item">
+                                            <input type="text" name="{{ category }}_collections[]" value="{{ collection }}" placeholder="Collection Name">
+                                            <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                                <button type="button" class="btn-small" onclick="addTVShowCollection(this)">Add Collection</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="btn-small" onclick="addTVShowCategory()">Add TV Show Category</button>
+                </div>
             </div>
 
             <!-- Discord Webhook URL -->
@@ -412,7 +489,7 @@
             list.appendChild(li);
         }
 
-        function addCollection() {
+        function addCollectionToPin() {
             const list = document.getElementById('collectionsToPinList');
             const li = document.createElement('li');
             li.classList.add('list-item');
@@ -435,6 +512,66 @@
             list.appendChild(div);
         }
 
+        function addMovieCategory() {
+            const list = document.getElementById('moviesList');
+            const div = document.createElement('div');
+            div.classList.add('category-item');
+            div.innerHTML = `
+                <label>Category Name:</label><input type="text" name="movie_categories[]" placeholder="Category Name">
+                <label>Always Call:</label><input type="checkbox" name="always_call_movie">
+                <button type="button" class="btn-small" onclick="removeCategory(this)">Remove</button>
+                <h5>Collections:</h5>
+                <ul class="category-collection">
+                    <li class="list-item">
+                        <input type="text" placeholder="Collection Name" name="movie_collections[]">
+                        <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
+                    </li>
+                </ul>
+            `;
+            list.appendChild(div);
+        }
+
+        function addTVShowCategory() {
+            const list = document.getElementById('tvShowsList');
+            const div = document.createElement('div');
+            div.classList.add('category-item');
+            div.innerHTML = `
+                <label>Category Name:</label><input type="text" name="tv_show_categories[]" placeholder="Category Name">
+                <label>Always Call:</label><input type="checkbox" name="always_call_tv_show">
+                <button type="button" class="btn-small" onclick="removeCategory(this)">Remove</button>
+                <h5>Collections:</h5>
+                <ul class="category-collection">
+                    <li class="list-item">
+                        <input type="text" placeholder="Collection Name" name="tv_show_collections[]">
+                        <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
+                    </li>
+                </ul>
+            `;
+            list.appendChild(div);
+        }
+
+        function addMovieCollection(button) {
+            const collectionDiv = button.closest('.category-item').querySelector('.category-collection');
+            const li = document.createElement('li');
+            li.classList.add('list-item');
+            li.innerHTML = `
+                <input type="text" placeholder="Collection Name" name="movie_collections[]">
+                <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
+            `;
+            collectionDiv.appendChild(li);
+        }
+
+        function addTVShowCollection(button) {
+            const collectionDiv = button.closest('.category-item').querySelector('.category-collection');
+            const li = document.createElement('li');
+            li.classList.add('list-item');
+            li.innerHTML = `
+                <input type="text" placeholder="Collection Name" name="tv_show_collections[]">
+                <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
+            `;
+            collectionDiv.appendChild(li);
+        }
+
         function removeItem(button) {
             const listItem = button.closest('.list-item');
             listItem.remove();
@@ -443,6 +580,11 @@
         function removeSpecialCollection(button) {
             const specialCollection = button.closest('.special-collection');
             specialCollection.remove();
+        }
+
+        function removeCategory(button) {
+            const categoryItem = button.closest('.category-item');
+            categoryItem.remove();
         }
 
         function toggleList(listId) {

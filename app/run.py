@@ -2,15 +2,15 @@ from flask import Flask, render_template, request, redirect, url_for
 import json
 import os
 import subprocess
+import psutil
 
 app = Flask(__name__)
 
-# Set the path to your config.json file
+# Path to your configuration file
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
-COLLEXIONS_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), 'collexions.py')  # Update this if necessary
 
 def load_config():
-    """Loads configuration data from config.json"""
+    """Loads configuration data from config.json."""
     if os.path.exists(CONFIG_PATH):
         with open(CONFIG_PATH, 'r') as file:
             config = json.load(file)
@@ -20,7 +20,7 @@ def load_config():
     return {}
 
 def save_config(data):
-    """Saves configuration data back to config.json"""
+    """Saves configuration data back to config.json."""
     with open(CONFIG_PATH, 'w') as file:
         json.dump(data, file, indent=4)
         print("Config data saved:", data)  # Debug print to confirm saving
@@ -40,12 +40,13 @@ def dashboard():
 @app.route('/config', methods=['GET', 'POST'])
 def config():
     if request.method == 'POST':
+        print("Pinning collections initiated.")  # Debugging line
         # Collect form data and prepare it for saving
         config_data = {
             "plex_url": request.form.get("plexUrl"),
             "plex_token": request.form.get("plexToken"),
             "library_names": request.form.getlist("library_names[]"),
-            "pinning_interval": int(request.form.get("pinningInterval", 21600)),
+            "pinning_interval": int(request.form.get("pinningInterval", 360)),
             "number_of_collections_to_pin": dict(zip(
                 request.form.getlist("collectionsToPinLibrary[]"), 
                 map(int, request.form.getlist("collectionsToPinCount[]"))
@@ -62,13 +63,32 @@ def config():
                     request.form.getlist("collectionNames[]")
                 )
             ],
-            # Inclusion and Exclusion Lists
             "use_inclusion_list": "use_inclusion_list" in request.form,
             "inclusion_list": request.form.getlist("inclusion_list[]"),
             "exclusion_list": request.form.getlist("exclusion_list[]"),
-            # Discord Webhook URL
-            "discord_webhook_url": request.form.get("discordWebhook")
+            "discord_webhook_url": request.form.get("discordWebhook"),
+            "categories": {
+                "Movies": {},
+                "TV Shows": {}
+            }
         }
+
+        # Collect and save category data
+        movie_categories = request.form.getlist("movie_categories[]")
+        tv_show_categories = request.form.getlist("tv_show_categories[]")
+
+        for category in movie_categories:
+            config_data["categories"]["Movies"][category] = {
+                "always_call": request.form.get("always_call_" + category) == "on",
+                "collections": request.form.getlist(category + "_collections[]")
+            }
+
+        for category in tv_show_categories:
+            config_data["categories"]["TV Shows"][category] = {
+                "always_call": request.form.get("always_call_" + category) == "on",
+                "collections": request.form.getlist(category + "_collections[]")
+            }
+
         # Save the config data
         save_config(config_data)
         return redirect(url_for('config'))
@@ -77,12 +97,17 @@ def config():
     config = load_config()
     return render_template('config.html', config=config)
 
+def is_collexions_running():
+    """Check if collexions.py is already running."""
+    for proc in psutil.process_iter(['pid', 'name']):
+        if proc.info['name'] == "python3" and "collexions.py" in proc.cmdline():
+            return True
+    return False
+
 if __name__ == '__main__':
-    # Start collexions.py in a separate process if it exists
-    if os.path.exists(COLLEXIONS_SCRIPT_PATH):
-        subprocess.Popen(['python3', COLLEXIONS_SCRIPT_PATH])
-    else:
-        print(f"Error: {COLLEXIONS_SCRIPT_PATH} does not exist. Please check the path.")
-        
-    # Start the Flask app
-    app.run(host='0.0.0.0', port=2000, debug=True)
+    # Start collexions.py as a separate process only if not already running
+    if not is_collexions_running():
+        print("Starting collexions.py...")
+        subprocess.Popen(['python3', os.path.join(os.path.dirname(__file__), 'collexions.py')])
+
+    app.run(host='0.0.0.0', port=2000, debug=False)

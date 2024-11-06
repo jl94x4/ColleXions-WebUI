@@ -1,0 +1,24 @@
+[supervisord]
+nodaemon=true
+user=root
+priority=1
+
+[program:flask]
+command=python /app/run.py
+directory=/app
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/flask.log
+stderr_logfile=/var/log/flask.err.log
+user=root
+priority=2
+
+[program:collexions]
+command=python /app/collexions.py
+directory=/app
+autostart=true
+autorestart=true
+stdout_logfile=/var/log/collexions.log
+stderr_logfile=/var/log/collexions.err.log
+user=root
+priority=3

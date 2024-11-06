@@ -8,6 +8,9 @@ import requests
 from plexapi.server import PlexServer
 from datetime import datetime, timedelta
 
+# Set the path to your config.json file
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
+
 # Define log file path
 LOG_DIR = 'logs'
 LOG_FILE = os.path.join(LOG_DIR, 'collexions.log')
@@ -56,14 +59,15 @@ def save_selected_collections(selected_collections):
     }
     with open(SELECTED_COLLECTIONS_FILE, 'w', encoding='utf-8') as f:
         json.dump(selected_collections, f, ensure_ascii=False, indent=4)
-
 def load_config():
-    if not os.path.exists(CONFIG_FILE):
-        logging.error(f"Configuration file '{CONFIG_FILE}' not found.")
-        raise FileNotFoundError(f"Configuration file '{CONFIG_FILE}' not found.")
-    with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-        config = json.load(f)
-    return config
+    """Loads configuration data from config.json."""
+    if os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH, 'r') as file:
+            config = json.load(file)
+            print("Config data loaded:", config)  # Debug print to confirm data
+            return config
+    print("Config file not found.")  # Debug print if config is missing
+    return {}
 
 def connect_to_plex(config):
     logging.info("Connecting to Plex server...")
@@ -92,6 +96,7 @@ def pin_collections(collections, config):
                 send_discord_message(config['discord_webhook_url'], message)
         except Exception as e:
             logging.error(f"Error while pinning collection: {collection.title}. Error: {str(e)}")
+            print("Collections to pin:", collections_to_pin)
 
 def send_discord_message(webhook_url, message):
     data = {"content": message}

@@ -2,7 +2,7 @@ import json
 import os
 
 # Define the path to the shared configuration file and logs
-CONFIG_PATH = '/app/config.json'
+CONFIG_PATH = '/booo/config.json'
 LOG_PATH = '/logs/collexions.log'
 
 def load_config():
