@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import psutil
+import requests
 
 app = Flask(__name__)
 
@@ -31,11 +32,13 @@ def dashboard():
     currently_pinned = ["Collection A", "Collection B"]  # Placeholder
     previously_pinned = ["Collection X", "Collection Y", "Collection Z"]  # Placeholder
     next_run_interval = config.get("pinning_interval", 21600)
+    collections = fetch_mdb_collections()  # Fetch collections from MDBlist
 
     return render_template('dashboard.html', 
                            currently_pinned=currently_pinned, 
                            previously_pinned=previously_pinned,
-                           next_run_interval=next_run_interval)
+                           next_run_interval=next_run_interval,
+                           collections=collections)
 
 @app.route('/config', methods=['GET', 'POST'])
 def config():
@@ -104,10 +107,21 @@ def is_collexions_running():
             return True
     return False
 
+def fetch_mdb_collections():
+    """Fetch collections from MDBlist."""
+    mdb_api_url = "https://api.mdblist.com/v1/collections"  # Example endpoint
+    response = requests.get(mdb_api_url)
+
+    if response.status_code == 200:
+        return response.json()  # Returns a list of collections
+    else:
+        print("Error fetching data from MDBlist:", response.status_code, response.text)
+        return []
+
 if __name__ == '__main__':
     # Start collexions.py as a separate process only if not already running
     if not is_collexions_running():
         print("Starting collexions.py...")
         subprocess.Popen(['python3', os.path.join(os.path.dirname(__file__), 'collexions.py')])
 
-    app.run(host='0.0.0.0', port=2000, debug=False)
+    app.run(host='0.0.0.0', port=2000, debug=False)  # Debug set to False for production
