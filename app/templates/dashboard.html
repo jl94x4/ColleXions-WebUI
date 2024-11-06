@@ -4,17 +4,88 @@
     <meta charset="UTF-8">
     <title>ColleXions Dashboard</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f0f4f8; color: #333; display: flex; justify-content: center; padding: 20px; }
-        .container { max-width: 1000px; width: 100%; background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
-        .navbar { display: flex; justify-content: space-between; background-color: #3b6978; padding: 10px; color: #fff; border-radius: 8px 8px 0 0; }
-        .navbar a { color: #fff; text-decoration: none; font-weight: bold; }
-        h1 { color: #3b6978; font-size: 24px; text-align: center; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #f0f4f8; 
+            color: #333; 
+            display: flex; 
+            justify-content: center; 
+            padding: 20px; 
+            margin: 0; 
+        }
 
-        .section { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px; }
-        .card { flex: 1 1 30%; min-width: 280px; background-color: #f5f7fa; border-radius: 12px; padding: 20px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
-        .card h2 { font-size: 18px; color: #52616b; margin-bottom: 10px; }
-        .pinned-item { background-color: #e0f4f1; padding: 8px; border-radius: 8px; margin-bottom: 8px; }
-        .countdown-timer { font-size: 20px; font-weight: bold; color: #6c8a93; }
+        .container { 
+            max-width: 1000px; 
+            width: 100%; 
+            background-color: #ffffff; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+        }
+
+        .navbar { 
+            display: flex; 
+            justify-content: space-between; 
+            background-color: #3b6978; 
+            padding: 10px; 
+            color: #fff; 
+            border-radius: 8px 8px 0 0; 
+        }
+
+        .navbar a { 
+            color: #fff; 
+            text-decoration: none; 
+            font-weight: bold; 
+        }
+
+        h1 { 
+            color: #3b6978; 
+            font-size: 24px; 
+            text-align: center; 
+        }
+
+        .section { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 20px; 
+            margin-top: 20px; 
+        }
+
+        .card { 
+            flex: 1 1 30%; 
+            min-width: 280px; 
+            background-color: #f5f7fa; 
+            border-radius: 12px; 
+            padding: 20px; 
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+        }
+
+        .card h2 { 
+            font-size: 18px; 
+            color: #52616b; 
+            margin-bottom: 10px; 
+        }
+
+        .pinned-item { 
+            background-color: #e0f4f1; 
+            padding: 8px; 
+            border-radius: 8px; 
+            margin-bottom: 8px; 
+        }
+
+        .countdown-timer { 
+            font-size: 20px; 
+            font-weight: bold; 
+            color: #6c8a93; 
+        }
+
+        .collection-item {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #d1d8de;
+            border-radius: 5px;
+            background-color: #f9fbfc;
+        }
     </style>
 </head>
 <body>
@@ -60,6 +131,25 @@
                 {% else %}
                     <p>No scheduled interval set.</p>
                 {% endif %}
+            </div>
+        </div>
+
+        <!-- New Collections Section -->
+        <div class="section">
+            <div class="card">
+                <h2>New Collections from MDBlist</h2>
+                <div id="newCollections">
+                    {% if collections %}
+                        {% for collection in collections %}
+                            <div class="collection-item">
+                                <h3>{{ collection.title }}</h3>
+                                <p>Overview: {{ collection.overview }}</p>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p>No new collections available.</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

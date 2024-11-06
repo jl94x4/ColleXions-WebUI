@@ -24,6 +24,22 @@
             box-sizing: border-box;
         }
 
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            background-color: #3b6978;
+            padding: 10px;
+            color: #fff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
         .header {
             text-align: center;
             padding: 20px;
@@ -264,6 +280,12 @@
 </head>
 <body>
     <div class="container">
+        <!-- Navigation Bar -->
+        <div class="navbar">
+            <a href="/">Dashboard</a>
+            <a href="/config">Configuration</a>
+        </div>
+
         <div class="header">ColleXions Configuration</div>
         <form action="{{ url_for('config') }}" method="post">
             <!-- Plex URL -->
@@ -503,11 +525,11 @@
             const list = document.getElementById('specialCollectionsList');
             const div = document.createElement('div');
             div.classList.add('special-collection');
-            div.innerHTML = `
-                <label>Start Date:</label><input type="text" name="startDate[]" placeholder="MM-DD">
-                <label>End Date:</label><input type="text" name="endDate[]" placeholder="MM-DD">
-                <label>Collection Names (comma-separated):</label><input type="text" name="collectionNames[]" placeholder="Collection Names">
-                <button type="button" class="remove-special-btn" onclick="removeSpecialCollection(this)">Remove</button>
+            div.innerHTML = `\
+                <label>Start Date:</label><input type="text" name="startDate[]" placeholder="MM-DD">\
+                <label>End Date:</label><input type="text" name="endDate[]" placeholder="MM-DD">\
+                <label>Collection Names (comma-separated):</label><input type="text" name="collectionNames[]" placeholder="Collection Names">\
+                <button type="button" class="remove-special-btn" onclick="removeSpecialCollection(this)">Remove</button>\
             `;
             list.appendChild(div);
         }
@@ -516,17 +538,17 @@
             const list = document.getElementById('moviesList');
             const div = document.createElement('div');
             div.classList.add('category-item');
-            div.innerHTML = `
-                <label>Category Name:</label><input type="text" name="movie_categories[]" placeholder="Category Name">
-                <label>Always Call:</label><input type="checkbox" name="always_call_movie">
-                <button type="button" class="btn-small" onclick="removeCategory(this)">Remove</button>
-                <h5>Collections:</h5>
-                <ul class="category-collection">
-                    <li class="list-item">
-                        <input type="text" placeholder="Collection Name" name="movie_collections[]">
-                        <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
-                    </li>
-                </ul>
+            div.innerHTML = `\
+                <label>Category Name:</label><input type="text" name="movie_categories[]" placeholder="Category Name">\
+                <label>Always Call:</label><input type="checkbox" name="always_call_movie">\
+                <button type="button" class="btn-small" onclick="removeCategory(this)">Remove</button>\
+                <h5>Collections:</h5>\
+                <ul class="category-collection">\
+                    <li class="list-item">\
+                        <input type="text" placeholder="Collection Name" name="movie_collections[]">\
+                        <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>\
+                    </li>\
+                </ul>\
             `;
             list.appendChild(div);
         }
@@ -535,17 +557,17 @@
             const list = document.getElementById('tvShowsList');
             const div = document.createElement('div');
             div.classList.add('category-item');
-            div.innerHTML = `
-                <label>Category Name:</label><input type="text" name="tv_show_categories[]" placeholder="Category Name">
-                <label>Always Call:</label><input type="checkbox" name="always_call_tv_show">
-                <button type="button" class="btn-small" onclick="removeCategory(this)">Remove</button>
-                <h5>Collections:</h5>
-                <ul class="category-collection">
-                    <li class="list-item">
-                        <input type="text" placeholder="Collection Name" name="tv_show_collections[]">
-                        <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
-                    </li>
-                </ul>
+            div.innerHTML = `\
+                <label>Category Name:</label><input type="text" name="tv_show_categories[]" placeholder="Category Name">\
+                <label>Always Call:</label><input type="checkbox" name="always_call_tv_show">\
+                <button type="button" class="btn-small" onclick="removeCategory(this)">Remove</button>\
+                <h5>Collections:</h5>\
+                <ul class="category-collection">\
+                    <li class="list-item">\
+                        <input type="text" placeholder="Collection Name" name="tv_show_collections[]">\
+                        <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>\
+                    </li>\
+                </ul>\
             `;
             list.appendChild(div);
         }
@@ -554,9 +576,9 @@
             const collectionDiv = button.closest('.category-item').querySelector('.category-collection');
             const li = document.createElement('li');
             li.classList.add('list-item');
-            li.innerHTML = `
-                <input type="text" placeholder="Collection Name" name="movie_collections[]">
-                <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
+            li.innerHTML = `\
+                <input type="text" placeholder="Collection Name" name="movie_collections[]">\
+                <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>\
             `;
             collectionDiv.appendChild(li);
         }
@@ -565,9 +587,9 @@
             const collectionDiv = button.closest('.category-item').querySelector('.category-collection');
             const li = document.createElement('li');
             li.classList.add('list-item');
-            li.innerHTML = `
-                <input type="text" placeholder="Collection Name" name="tv_show_collections[]">
-                <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>
+            li.innerHTML = `\
+                <input type="text" placeholder="Collection Name" name="tv_show_collections[]">\
+                <button type="button" class="minus-btn" onclick="removeItem(this)">−</button>\
             `;
             collectionDiv.appendChild(li);
         }
