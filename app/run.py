@@ -94,18 +94,21 @@ def config():
 
         # Save the config data
         save_config(config_data)
+
+        # Always restart collexions.py after saving the configuration
+        for proc in psutil.process_iter(['pid', 'name']):
+            if proc.info['name'] == "python3" and "collexions.py" in proc.cmdline():
+                print("Killing existing collexions.py process...")
+                proc.kill()  # Kill the existing process
+
+        print("Starting new instance of collexions.py...")
+        subprocess.Popen(['python3', os.path.join(os.path.dirname(__file__), 'collexions.py')])  # Ensure the path is correct
+
         return redirect(url_for('config'))
 
     # For GET requests, load config data and pass it to the template
     config = load_config()
     return render_template('config.html', config=config)
-
-def is_collexions_running():
-    """Check if collexions.py is already running."""
-    for proc in psutil.process_iter(['pid', 'name']):
-        if proc.info['name'] == "python3" and "collexions.py" in proc.cmdline():
-            return True
-    return False
 
 def fetch_mdb_collections():
     """Fetch collections from MDBlist."""
@@ -120,7 +123,9 @@ def fetch_mdb_collections():
 
 if __name__ == '__main__':
     # Start collexions.py as a separate process only if not already running
-    if not is_collexions_running():
+    print("Checking if collexions.py is running...")
+    collexions_running = any(proc.info['name'] == "python3" and "collexions.py" in proc.cmdline() for proc in psutil.process_iter(['pid', 'name']))
+    if not collexions_running:
         print("Starting collexions.py...")
         subprocess.Popen(['python3', os.path.join(os.path.dirname(__file__), 'collexions.py')])
 
