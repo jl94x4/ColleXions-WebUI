@@ -20,6 +20,10 @@ Includes collaboration with @[defluophoenix](https://github.com/jl94x4/ColleXion
 
 - **Exclusion List:** Users can specify collections to exclude from pinning, ensuring that collections you don't want to see on the home screen are never selected. This is also useful if you manually pin items to your homescreen and do not want this tool to interfere with those.
 
+  - **Regex Filtered Exclusion:** Uses regex to filter out keywords that are specified in the config file, ColleXions will automatically exclude any collection that have the specific keyword listed in the title.
+
+- **Label Support:** Collexions will add a label (user defined in config) to each collection that is pinned, and will remove the collection when unpinned. This is great for Kometa support with labels.
+
 - **Inclusion List:** Users can specify collections to include from pinning, ensuring full control over the collections you see on your home screen.
 
 - **Customizable Settings:** Users can easily adjust library names, pinning intervals, and the number of collections to pin, tailoring the experience to their preferences.
