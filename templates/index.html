@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ColleXions Configuration</title>
+    {# Link local Font Awesome CSS BEFORE your custom styles #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+{# Add id="the-body" for JS targeting #}
+<body id="the-body">
+    <div class="container">
+        <header>
+            {# --- Add Theme Toggle Button --- #}
+            <button type="button" id="theme-toggle-button" class="theme-toggle-button" title="Toggle dark/light theme">
+                <i class="fas fa-moon"></i> {# Icon will be updated by JS #}
+            </button>
+            {# --- End Theme Toggle Button --- #}
+
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ColleXions Logo" class="header-logo">
+            <h1>ColleXions Configuration</h1>
+             {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                    </div>
+                {% endif %}
+             {% endwith %}
+
+             {# --- Script Status & Controls --- #}
+             <div class="status-controls">
+                 <span id="script-status-indicator" class="status-indicator status-unknown" title="Current status of the background ColleXions.py script">?</span>
+                 <span id="script-status-text">Checking status...</span>
+                 <span id="next-run-countdown" class="countdown" title="Estimated time until the next automatic pinning cycle starts"></span>
+                 <div class="control-buttons">
+                     <button type="button" id="start-script-btn" class="control-btn start" title="Start the ColleXions.py background script if it's stopped"><i class="fas fa-play"></i> Start</button>
+                     <button type="button" id="stop-script-btn" class="control-btn stop" title="Stop the currently running ColleXions.py background script"><i class="fas fa-stop"></i> Stop</button>
+                     <button type="button" id="test-plex-btn" class="control-btn test" title="Verify connection to the configured Plex server"><i class="fas fa-plug"></i> Test Plex</button>
+                 </div>
+             </div>
+             {# --- End Status & Controls --- #}
+
+             <div class="view-buttons">
+                <button type="button" id="view-history-btn" class="view-btn" title="View selected_collections.json - shows recently pinned non-special collections used for the 'Repeat Block Hours' logic"><i class="fas fa-history"></i> View Pin History</button>
+                <button type="button" id="view-log-btn" class="view-btn" title="View the latest entries from logs/collexions.log"><i class="fas fa-file-alt"></i> View Log File</button>
+             </div>
+        </header>
+
+        <form action="{{ url_for('index') }}" method="post" id="config-form">
+
+            {# --- Plex Connection Section (Unchanged) --- #}
+            <section class="form-section">
+                 <div class="section-header">
+                    <h2 title="Enter the details needed to connect to your Plex Media Server instance. Both fields are required.">
+                        <i class="fas fa-server"></i> Plex Connection
+                    </h2>
+                 </div>
+                 <div class="form-group"> <label for="plex_url">Plex URL:</label><input type="url" id="plex_url" name="plex_url" value="{{ config.get('plex_url', '') }}" placeholder="http://your-plex-ip:32400" required title="Enter the full URL, including http/https and port. E.g., http://192.168.1.100:32400"><small>Full URL.</small></div>
+                 <div class="form-group"><label for="plex_token">Plex Token:</label><input type="password" id="plex_token" name="plex_token" value="{{ config.get('plex_token', '') }}" placeholder="Enter Plex Token" required title="Enter your Plex X-Plex-Token."><small>Auth token.</small></div>
+            </section>
+
+             {# --- Core Settings Section (Unchanged) --- #}
+            <section class="form-section">
+                 <div class="section-header">
+                    <h2 title="Configure the main operational parameters of the ColleXions script.">
+                        <i class="fas fa-cogs"></i> Core Settings
+                    </h2>
+                 </div>
+                 <div class="form-group"><label for="collexions_label">ColleXions Label:</label><input type="text" id="collexions_label" name="collexions_label" value="{{ config.get('collexions_label', 'Collexions') }}" placeholder="Label added" title="This label will be added/removed by the script."><small>Label added/removed by script.</small></div>
+                 <div class="form-group"><label for="pinning_interval">Run Interval (minutes):</label><input type="number" id="pinning_interval" name="pinning_interval" value="{{ config.get('pinning_interval', 180) }}" min="1" required title="Frequency, in minutes, script runs. Min 1."><small>Update frequency.</small></div>
+                 <div class="form-group"><label for="repeat_block_hours">Repeat Block (Hours):</label><input type="number" id="repeat_block_hours" name="repeat_block_hours" value="{{ config.get('repeat_block_hours', 12) }}" min="0" title="Hours before a non-special collection can repeat. 0=disable."><small>Hours before non-special repeat.</small></div>
+                 <div class="form-group"><label for="min_items_for_pinning">Minimum Items for Pinning:</label><input type="number" id="min_items_for_pinning" name="min_items_for_pinning" value="{{ config.get('min_items_for_pinning', 10) }}" min="0" title="Collections need this many items to be pinned (unless special)."><small>Minimum items to pin.</small></div>
+                 <div class="form-group"><label for="discord_webhook_url">Discord Webhook URL (Optional):</label><input type="url" id="discord_webhook_url" name="discord_webhook_url" value="{{ config.get('discord_webhook_url', '') }}" placeholder="Discord Webhook URL" title="Optional webhook URL for pin notifications."><small>URL for Discord notifications.</small></div>
+            </section>
+
+            {# --- Libraries & Pin Counts Section (Unchanged) --- #}
+            <section class="form-section">
+                 <div class="section-header">
+                     <h2><i class="fas fa-list-ol"></i> Libraries & Pin Counts</h2>
+                     <span class="tooltip-container"><i class="fas fa-info-circle tooltip-trigger"></i><span class="tooltip-text">Specify which Plex libraries to scan and the maximum number of collections to pin in each. Libraries must be listed before setting pin counts or categories.</span></span>
+                     <button type="button" class="toggle-section-btn" aria-expanded="false" title="Toggle visibility"><i class="fas fa-chevron-down"></i></button>
+                 </div>
+                 <div class="collapsible-content" style="display: none;">
+                     <div class="form-group dynamic-list-container">
+                        <label for="library_names_list">Plex Library Names:</label><small>Case-sensitive names of libraries to process.</small>
+                        <div id="library_names_list">
+                            {% for library in config.get('library_names', []) %}
+                            <div class="dynamic-list-item"><input type="text" name="library_names[]" value="{{ library }}" placeholder="Library Name" title="Enter the exact name of a Plex library"><button type="button" class="remove-item-btn" title="Remove this library"><i class="fas fa-minus-circle"></i></button></div>
+                            {% endfor %}
+                        </div>
+                        <button type="button" class="add-item-btn" data-target="library_names_list" data-template="library_names_template" title="Add another library name to process"><i class="fas fa-plus-circle"></i> Add Library</button>
+                    </div>
+                     <div class="form-group dynamic-list-container">
+                        <label for="number_of_collections_to_pin_list">Number of Collections to Pin per Library:</label><small>Set the maximum pins for specific libraries.</small>
+                         <div id="number_of_collections_to_pin_list">
+                             {% for key, value in config.get('number_of_collections_to_pin', {}).items() %}
+                             <div class="dynamic-list-item key-value"><input type="text" name="pin_library_key[]" value="{{ key }}" placeholder="Library Name" class="key-input" title="Library name (must match one listed above)"><input type="number" name="pin_library_value[]" value="{{ value }}" placeholder="Count" min="0" class="value-input" title="Number of collections to pin (0 to disable)"><button type="button" class="remove-item-btn" title="Remove this pin count rule"><i class="fas fa-minus-circle"></i></button></div>
+                             {% endfor %}
+                         </div>
+                         <button type="button" class="add-item-btn" data-target="number_of_collections_to_pin_list" data-template="number_of_collections_to_pin_template" title="Add pin count rule for a library"><i class="fas fa-plus-circle"></i> Add Library Pin Count</button>
+                    </div>
+                 </div>{# End Collapsible Content #}
+            </section>
+
+            {# --- Exclusions Section (Unchanged) --- #}
+            <section class="form-section">
+                 <div class="section-header">
+                    <h2><i class="fas fa-filter"></i> Exclusions</h2>
+                    <span class="tooltip-container"><i class="fas fa-info-circle tooltip-trigger"></i><span class="tooltip-text">Define collections that should never be automatically pinned or unpinned by the script, either by exact title or by matching a regex pattern.</span></span>
+                     <button type="button" class="toggle-section-btn" aria-expanded="false" title="Toggle visibility"><i class="fas fa-chevron-down"></i></button>
+                 </div>
+                 <div class="collapsible-content" style="display: none;">
+                    <div class="form-group dynamic-list-container">
+                        <label for="exclusion_list_list">Exclude by Exact Title:</label><small>Titles listed here will be ignored completely.</small>
+                        <div id="exclusion_list_list">
+                            {% for item in config.get('exclusion_list', []) %}
+                            <div class="dynamic-list-item"><input type="text" name="exclusion_list[]" value="{{ item }}" placeholder="Exact Collection Title" title="Collection title to exclude completely"><button type="button" class="remove-item-btn" title="Remove this exclusion"><i class="fas fa-minus-circle"></i></button></div>
+                            {% endfor %}
+                        </div>
+                        <button type="button" class="add-item-btn" data-target="exclusion_list_list" data-template="exclusion_list_template" title="Add a title to always exclude"><i class="fas fa-plus-circle"></i> Add Title Exclusion</button>
+                    </div>
+                    <div class="form-group dynamic-list-container">
+                        <label for="regex_exclusion_patterns_list">Exclude by Regex Pattern:</label><small>Exclude from pinning if title matches pattern (case-insensitive).</small>
+                         <div id="regex_exclusion_patterns_list">
+                             {% for pattern in config.get('regex_exclusion_patterns', []) %}
+                             <div class="dynamic-list-item"><input type="text" name="regex_exclusion_patterns[]" value="{{ pattern }}" placeholder="Regex Pattern" title="Python-compatible regex pattern"><button type="button" class="remove-item-btn" title="Remove this pattern"><i class="fas fa-minus-circle"></i></button></div>
+                             {% endfor %}
+                         </div>
+                         <button type="button" class="add-item-btn" data-target="regex_exclusion_patterns_list" data-template="regex_exclusion_patterns_template" title="Add a regex pattern for exclusion"><i class="fas fa-plus-circle"></i> Add Regex Exclusion</button>
+                    </div>
+                 </div>{# End Collapsible Content #}
+            </section>
+
+            {# --- Special Collections Section (Button Updated) --- #}
+            <section class="form-section">
+                 <div class="section-header">
+                     <h2><i class="fas fa-calendar-alt"></i> Special Collections</h2>
+                      <span class="tooltip-container"><i class="fas fa-info-circle tooltip-trigger"></i><span class="tooltip-text">Define collections (e.g., for holidays) to be forcibly pinned during specific MM-DD date ranges each year. These override exclusions and limits.</span></span>
+                     <button type="button" class="toggle-section-btn" aria-expanded="false" title="Toggle visibility"><i class="fas fa-chevron-down"></i></button>
+                 </div>
+                 <div class="collapsible-content" style="display: none;">
+                     <small>Prioritized collections for specific date ranges.</small>
+                     <div id="special_collections_list" class="dynamic-section-container">
+                        {# Loop displaying existing special collections #}
+                        {% for special in config.get('special_collections', []) %}
+                        <div class="dynamic-section-item special-collection-item">
+                            <div class="form-group"><label>Start (MM-DD):</label><input type="text" name="special_start_date[]" value="{{ special.get('start_date', '') }}" placeholder="MM-DD" pattern="\d{2}-\d{2}" required title="Start MM-DD"></div>
+                            <div class="form-group"><label>End (MM-DD):</label><input type="text" name="special_end_date[]" value="{{ special.get('end_date', '') }}" placeholder="MM-DD" pattern="\d{2}-\d{2}" required title="End MM-DD"></div>
+                            <div class="form-group"><label>Names (comma-sep):</label><input type="text" name="special_collection_names[]" value="{{ special.get('collection_names', [])|join(', ') }}" placeholder="Names" required title="Comma-separated titles"><small>Exact titles.</small></div>
+                            {# --- MODIFIED BUTTON --- #}
+                            <button type="button" class="remove-item-btn" title="Remove Special Period"><i class="fas fa-minus-circle"></i></button>
+                        </div>
+                        {% endfor %}
+                     </div>
+                     <button type="button" class="add-section-btn" data-target="special_collections_list" data-template="special_collections_template" title="Add a new timed period"><i class="fas fa-plus-circle"></i> Add Special Period</button>
+                 </div>{# End Collapsible Content #}
+            </section>
+
+            {# --- Category Prioritization Section (Includes loop.parent fix) --- #}
+            <section class="form-section">
+                 <div class="section-header">
+                     <h2><i class="fas fa-tags"></i> Category Prioritization</h2>
+                      <span class="tooltip-container"><i class="fas fa-info-circle tooltip-trigger"></i><span class="tooltip-text">Define categories for specific libraries. The script will attempt to pin the specified number of random collections from each enabled category (Pin Count > 0) after Special Collections but before filling remaining slots randomly.</span></span>
+                      <button type="button" class="toggle-section-btn" aria-expanded="false" title="Toggle visibility"><i class="fas fa-chevron-down"></i></button>
+                 </div>
+                 <div class="collapsible-content" style="display: none;">
+                     <small>Define categories per library and specify how many collections to pin from each.</small>
+
+                     {# Loop through libraries defined in the config #}
+                     {% set libraries = config.get('library_names', []) %}
+                     {% if libraries %}
+                        {% for library_name in libraries %}
+                         <div class="category-library-section">
+                            {# Sanitize library name for use in IDs/selectors if needed, simple replace for now #}
+                            {% set safe_library_name = library_name.replace(' ', '_').replace('-', '_') %}
+                            <h3>{{ library_name }} Library Categories</h3>
+                             <div id="categories_{{ safe_library_name }}_list" class="dynamic-section-container">
+                                 {# Loop through existing categories for this library #}
+                                 {% for category in config.get('categories', {}).get(library_name, []) %}
+                                 {% set category_index = loop.index0 %} {# Capture the category loop index #}
+                                 <div class="dynamic-section-item category-item">
+                                     <button type="button" class="remove-section-btn" title="Remove category"><i class="fas fa-times-circle"></i> Remove</button>
+                                     <div class="form-group">
+                                         <label>Category Name:</label>
+                                         <input type="text" name="category_{{ library_name }}_name[]" value="{{ category.get('category_name', '') }}" placeholder="{{ library_name }} Category Name" title="Unique name for this category within {{ library_name }}" required>
+                                     </div>
+                                      <div class="form-group">
+                                         <label>Pin Count:</label>
+                                         <input type="number" name="category_{{ library_name }}_pin_count[]" value="{{ category.get('pin_count', 1) }}" min="0" placeholder="No. to Pin" title="Number of collections to randomly pin from this category (0 to disable)" required>
+                                          <small>0 disables category.</small>
+                                     </div>
+                                     <div class="form-group dynamic-list-container nested">
+                                         <label>Collections in this Category:</label>
+                                         <div id="category_{{ safe_library_name }}_{{ category_index }}_collections_list">
+                                             {% for collection_title in category.get('collections', []) %}
+                                             <div class="dynamic-list-item">
+                                                 {# Use captured category_index for the input name #}
+                                                 <input type="text" name="category_{{ library_name }}_{{ category_index }}_collections[]" value="{{ collection_title }}" placeholder="Exact Collection Title" title="Exact collection title to include in this category">
+                                                 <button type="button" class="remove-item-btn" title="Remove collection"><i class="fas fa-minus-circle"></i></button>
+                                             </div>
+                                             {% endfor %}
+                                         </div>
+                                         <button type="button" class="add-item-btn nested-add"
+                                                 data-target="category_{{ safe_library_name }}_{{ category_index }}_collections_list"
+                                                 data-template="category_collection_template"
+                                                 data-library="{{ library_name }}"
+                                                 data-category-index="{{ category_index }}"
+                                                 title="Add collection title to this category">
+                                             <i class="fas fa-plus-circle"></i> Add Collection Title
+                                         </button>
+                                     </div>
+                                 </div>
+                                 {% endfor %} {# End category loop #}
+                             </div>
+                             <button type="button" class="add-section-btn"
+                                     data-target="categories_{{ safe_library_name }}_list"
+                                     data-template="category_template"
+                                     data-library="{{ library_name }}"
+                                     title="Add a new category for the {{ library_name }} library">
+                                 <i class="fas fa-plus-circle"></i> Add Category for {{ library_name }}
+                             </button>
+                         </div>
+                        {% endfor %}
+                     {% else %}
+                         <p><em>Please add libraries in the 'Libraries & Pin Counts' section first to define categories for them.</em></p>
+                     {% endif %}
+
+                 </div>{# End Collapsible Content #}
+            </section>
+
+            <div class="form-actions">
+                <button type="submit" class="save-button" title="Save changes to config.json. Use Start/Stop buttons to apply changes to running script.">
+                    <i class="fas fa-save"></i> Save Configuration
+                </button>
+            </div>
+        </form>
+    </div>{# End Container #}
+
+    {# --- Modals (Unchanged) --- #}
+    <div id="history-modal" class="modal"> <div class="modal-content"><span class="close-modal-btn" data-target="history-modal" title="Close">&times;</span><h2>Pinning History</h2><div class="modal-body"><div class="loading-indicator" id="history-loading">Loading...<i class="fas fa-spinner fa-spin"></i></div><pre id="history-display"></pre></div></div></div>
+    <div id="log-modal" class="modal"> <div class="modal-content wide"><span class="close-modal-btn" data-target="log-modal" title="Close">&times;</span><h2>Log File</h2><div class="modal-body"><div class="loading-indicator" id="log-loading">Loading...<i class="fas fa-spinner fa-spin"></i></div><pre id="log-display"></pre></div><div class="modal-footer"><button type="button" id="refresh-log-btn" class="view-btn small-btn" title="Reload log content"><i class="fas fa-sync-alt"></i> Refresh Log</button><p><small>Last ~200 lines.</small></p></div></div></div>
+
+    {# --- Templates (Special Collections Button Updated) --- #}
+    <template id="library_names_template"><div class="dynamic-list-item"><input type="text" name="library_names[]" placeholder="Library Name" title="Plex library name"><button type="button" class="remove-item-btn" title="Remove"><i class="fas fa-minus-circle"></i></button></div></template>
+    <template id="exclusion_list_template"><div class="dynamic-list-item"><input type="text" name="exclusion_list[]" placeholder="Exact Collection Title" title="Collection title"><button type="button" class="remove-item-btn" title="Remove"><i class="fas fa-minus-circle"></i></button></div></template>
+    <template id="regex_exclusion_patterns_template"><div class="dynamic-list-item"><input type="text" name="regex_exclusion_patterns[]" placeholder="Regex Pattern" title="Regex pattern"><button type="button" class="remove-item-btn" title="Remove"><i class="fas fa-minus-circle"></i></button></div></template>
+    <template id="number_of_collections_to_pin_template"><div class="dynamic-list-item key-value"><input type="text" name="pin_library_key[]" placeholder="Library Name" class="key-input" title="Library name"><input type="number" name="pin_library_value[]" placeholder="Count" min="0" class="value-input" title="Pin count"><button type="button" class="remove-item-btn" title="Remove"><i class="fas fa-minus-circle"></i></button></div></template>
+
+    <template id="special_collections_template">
+        {# Template for adding new Special Collections #}
+        <div class="dynamic-section-item special-collection-item">
+            <div class="form-group"><label>Start (MM-DD):</label><input type="text" name="special_start_date[]" placeholder="MM-DD" pattern="\d{2}-\d{2}" required title="Start MM-DD"></div>
+            <div class="form-group"><label>End (MM-DD):</label><input type="text" name="special_end_date[]" placeholder="MM-DD" pattern="\d{2}-\d{2}" required title="End MM-DD"></div>
+            <div class="form-group"><label>Names (comma-sep):</label><input type="text" name="special_collection_names[]" placeholder="Collection Names" required title="Comma-separated titles"><small>Exact titles.</small></div>
+            <button type="button" class="remove-item-btn" title="Remove Special Period"><i class="fas fa-minus-circle"></i></button>
+        </div>
+    </template>
+
+    <template id="category_template">
+        {# Template for adding new Categories per library #}
+        <div class="dynamic-section-item category-item">
+            <button type="button" class="remove-section-btn" title="Remove category"><i class="fas fa-times-circle"></i></button> {# Keep section remove for whole category #}
+            <div class="form-group">
+                <label>Category Name:</label>
+                <input type="text" name="category_{library}_name[]" placeholder="{library} Category Name" title="Unique name for this category within {library}" required>
+            </div>
+             <div class="form-group">
+                <label>Pin Count:</label>
+                <input type="number" name="category_{library}_pin_count[]" value="1" min="0" placeholder="No. to Pin" title="Number of collections to randomly pin from this category (0 to disable)" required>
+                 <small>0 disables category.</small>
+            </div>
+            <div class="form-group dynamic-list-container nested">
+                <label>Collections in this Category:</label>
+                {# The ID needs to be unique, JS will update {index} #}
+                <div id="category_{safe_library}_{index}_collections_list">
+                    {# Add a default empty item for new categories #}
+                    <div class="dynamic-list-item">
+                        <input type="text" name="category_{library}_{index}_collections[]" placeholder="Exact Collection Title" title="Exact collection title to include in this category">
+                        <button type="button" class="remove-item-btn" title="Remove collection"><i class="fas fa-minus-circle"></i></button>
+                    </div>
+                </div>
+                <button type="button" class="add-item-btn nested-add"
+                        data-target="category_{safe_library}_{index}_collections_list"
+                        data-template="category_collection_template"
+                        data-library="{library}"
+                        data-category-index="{index}"
+                        title="Add collection title to this category">
+                    <i class="fas fa-plus-circle"></i> Add Collection Title
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <template id="category_collection_template">
+         {# Template for adding collection titles within a category #}
+        <div class="dynamic-list-item">
+            <input type="text" name="category_{library}_{category_index}_collections[]" placeholder="Exact Collection Title" title="Exact collection title">
+            <button type="button" class="remove-item-btn" title="Remove"><i class="fas fa-minus-circle"></i></button>
+        </div>
+    </template>
+
+    {# --- Ensure Script Tag is Present and Correct --- #}
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
