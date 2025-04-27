@@ -52,14 +52,6 @@ If no special collections or categories are defined, ColleXions will automatical
 A file titled ``selected_collections.json`` is created on first run and updated each run afterwards and keeps track of what's been selected to ensure collections don't get picked repeatedly leaving other collections not being pinned as much. It resets after 3 days so hopefully you will only see a collection once every three days at most. This will depend on the amount of collections you have available and the amount you are asking ColleXions to pin will also play a part.
 
 ## Installation
-Extract the files in the location you wish to run it from
-
-Run ```pip install -r requirements.txt``` to install dependencies
-
-Configure the config.json in the Web-UI
-
-Run ```python3 /app/run.py```
-
 ## Docker Run
 
 <coming soon>
