@@ -2,6 +2,13 @@
 
 ## Preview
 
+**Dark Mode**
+![image](https://github.com/user-attachments/assets/9c76e1fc-f18b-43da-89d1-3f1dd64558db)
+
+**Light Mode**
+
+![image](https://github.com/user-attachments/assets/a1564d7b-8d3e-4ab0-acc3-13bf657b82c1)
+
 # ColleXions with Web-UI
 ColleXions automates the process of pinning collections to your Plex home screen, making it easier to showcase your favorite content. With customizable features, it enhances your Plex experience by dynamically adjusting what is displayed either controlled or completely randomly - the choice is yours. All options are configurable with a Web-UI.
 Includes collaboration with @[defluophoenix](https://github.com/jl94x4/ColleXions/commits?author=defluophoenix)
