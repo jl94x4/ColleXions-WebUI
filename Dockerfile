@@ -37,4 +37,4 @@ EXPOSE 5000
 
 # Define the command to run the application using Waitress
 # This assumes 'app' is the Flask object inside 'run.py'
-CMD ["waitress-serve", "--host=0.0.0.0", "--port=5000", "run:app"]
+CMD ["waitress-serve", "--host=0.0.0.0", "--port=2500", "run:app"]

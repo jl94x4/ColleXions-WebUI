@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function updateScriptStatus() {
-        console.log("SCRIPT: Updating script status...");
+        // console.log("SCRIPT: Updating script status..."); // Reduce frequency of this log
         if (!statusIndicator || !statusText) {
             console.error("SCRIPT: Status indicator or text element not found.");
             return;
@@ -121,13 +121,15 @@ document.addEventListener('DOMContentLoaded', function() {
                  throw new Error(`HTTP error! status: ${response.status}`);
             }
             currentStatusData = await response.json();
-            console.log("SCRIPT: Status data received:", currentStatusData);
+            // console.log("SCRIPT: Status data received:", currentStatusData); // Reduce frequency
 
             const isRunning = currentStatusData.script_running;
             const lastKnownStatus = currentStatusData.last_known_script_status || "Unknown";
             const nextRunTs = currentStatusData.next_run_timestamp; // Expecting timestamp in seconds
 
             statusIndicator.classList.remove('status-running', 'status-stopped', 'status-unknown', 'status-crashed', 'status-error');
+            statusText.classList.remove('status-error-text'); // Reset error text style
+
             if (isRunning) {
                 statusIndicator.classList.add('status-running');
                 statusIndicator.textContent = '✔';
@@ -139,20 +141,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (nextRunTs && typeof nextRunTs === 'number') {
                     nextRunTargetTimestamp = nextRunTs; // Store the target timestamp
                     if (!countdownIntervalId) {
-                         console.log("SCRIPT: Starting countdown interval.");
+                         // console.log("SCRIPT: Starting countdown interval.");
                          updateCountdown(); // Update immediately
                          countdownIntervalId = setInterval(updateCountdown, 1000);
                     }
                 } else {
-                    console.log("SCRIPT: No valid next run timestamp received, clearing countdown.");
+                    // console.log("SCRIPT: No valid next run timestamp received, clearing countdown.");
                     nextRunTargetTimestamp = null;
                     if (nextRunCountdown) nextRunCountdown.textContent = "";
                     clearInterval(countdownIntervalId);
                     countdownIntervalId = null;
                 }
-                 // Clear error status if running ok
-                statusText.classList.remove('status-error-text');
-
 
             } else { // Script is NOT running
                 clearInterval(countdownIntervalId); // Stop countdown if script stops
@@ -163,20 +162,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (lastKnownStatus.toLowerCase().includes("crashed") || lastKnownStatus.toLowerCase().includes("fatal")) {
                      statusIndicator.classList.add('status-crashed');
                      statusIndicator.textContent = '!';
-                     statusText.textContent = `Script Crashed: ${lastKnownStatus}`;
+                     statusText.textContent = `Script Status: ${lastKnownStatus}`;
                      statusText.classList.add('status-error-text');
 
                 } else if (lastKnownStatus.toLowerCase().includes("error")) {
                      statusIndicator.classList.add('status-error');
-                     statusIndicator.textContent = '✘'; // Different symbol for error vs stopped
-                     statusText.textContent = `Script Error: ${lastKnownStatus}`;
+                     statusIndicator.textContent = '✘';
+                     statusText.textContent = `Script Status: ${lastKnownStatus}`;
                      statusText.classList.add('status-error-text');
                 }
                  else {
                      statusIndicator.classList.add('status-stopped');
                      statusIndicator.textContent = '✘';
                      statusText.textContent = 'Script Stopped';
-                     statusText.classList.remove('status-error-text');
                  }
 
                 if (startScriptBtn) startScriptBtn.disabled = false;
@@ -189,11 +187,10 @@ document.addEventListener('DOMContentLoaded', function() {
             statusIndicator.classList.add('status-unknown');
             statusIndicator.textContent = '?';
             statusText.textContent = 'Status Unknown (Error)';
-            statusText.classList.add('status-error-text'); // Indicate UI error too
-            if (startScriptBtn) startScriptBtn.disabled = true; // Disable controls if status fails
+            statusText.classList.add('status-error-text');
+            if (startScriptBtn) startScriptBtn.disabled = true;
             if (stopScriptBtn) stopScriptBtn.disabled = true;
 
-            // Clear countdown on error
             clearInterval(countdownIntervalId);
             countdownIntervalId = null;
             nextRunTargetTimestamp = null;
@@ -211,50 +208,46 @@ document.addEventListener('DOMContentLoaded', function() {
     function openModal(modalElement) { if (modalElement) { modalElement.style.display = 'block'; } }
     function closeModal(modalElement) { if (modalElement) { modalElement.style.display = 'none'; } }
 
-    // --- Fetch and Display Functions --- (Updated with loading indicators)
+    // --- Fetch and Display Functions ---
     async function fetchAndShowHistory() {
         if (!historyDisplay || !historyLoading) return;
-        historyDisplay.textContent = ''; // Clear previous content
-        historyLoading.style.display = 'block'; // Show loading
+        historyDisplay.textContent = '';
+        historyLoading.style.display = 'block';
         openModal(historyModal);
         try {
             const response = await fetch('/get_history');
             const data = await response.json();
             if (!response.ok) { throw new Error(data.error || `HTTP error! status: ${response.status}`); }
-            // Format JSON nicely for display
             historyDisplay.textContent = JSON.stringify(data, null, 2);
         } catch (error) {
             console.error('SCRIPT: Error fetching history:', error);
             historyDisplay.textContent = `Error loading history:\n${error.message}`;
         } finally {
-            historyLoading.style.display = 'none'; // Hide loading
+            historyLoading.style.display = 'none';
         }
     }
 
     async function fetchAndShowLog() {
         if (!logDisplay || !logLoading) return;
-        logDisplay.textContent = ''; // Clear previous content
-        logLoading.style.display = 'block'; // Show loading
-        if (!logModal.style.display || logModal.style.display === 'none') {
-             openModal(logModal); // Only open if not already open
+        logDisplay.textContent = '';
+        logLoading.style.display = 'block';
+        const wasAlreadyOpen = logModal.style.display === 'block';
+        if (!wasAlreadyOpen) {
+             openModal(logModal);
         }
         try {
             const response = await fetch('/get_log');
             const data = await response.json();
              if (!response.ok) { throw new Error(data.error || `HTTP error! status: ${response.status}`); }
             logDisplay.textContent = data.log_content || '(Log file might be empty or inaccessible)';
-            // Scroll to bottom only if the modal was just opened or refresh was clicked
-             if (logModal.style.display === 'block') { // Check if visible
-                 logDisplay.scrollTop = logDisplay.scrollHeight;
-             }
+            logDisplay.scrollTop = logDisplay.scrollHeight;
+
         } catch (error) {
             console.error('SCRIPT: Error fetching log:', error);
             logDisplay.textContent = `Error loading log:\n${error.message}`;
-             if (logModal.style.display === 'block') {
-                 logDisplay.scrollTop = logDisplay.scrollHeight; // Scroll bottom even on error
-             }
+            logDisplay.scrollTop = logDisplay.scrollHeight;
         } finally {
-             logLoading.style.display = 'none'; // Hide loading
+             logLoading.style.display = 'none';
         }
     }
 
@@ -263,19 +256,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Modals
     if (viewHistoryBtn) { viewHistoryBtn.addEventListener('click', fetchAndShowHistory); }
     if (viewLogBtn) { viewLogBtn.addEventListener('click', fetchAndShowLog); }
-    if (refreshLogBtn) { refreshLogBtn.addEventListener('click', fetchAndShowLog); } // Refresh uses same function
+    if (refreshLogBtn) { refreshLogBtn.addEventListener('click', fetchAndShowLog); }
     closeModalBtns.forEach(btn => {
          btn.addEventListener('click', () => {
-            // Find the closest parent modal and close it
             const modalToClose = btn.closest('.modal');
-            if (modalToClose) {
-                closeModal(modalToClose);
-            } else {
-                // Fallback for older structure if needed
-                const targetId = btn.dataset.target;
-                const fallbackModal = document.getElementById(targetId);
-                closeModal(fallbackModal);
-            }
+            if (modalToClose) closeModal(modalToClose);
         });
      });
     window.addEventListener('click', (event) => {
@@ -287,56 +272,44 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleControlClick(button, url, actionName) {
          if (!button) return;
          console.log(`SCRIPT: ${actionName} button clicked.`);
-         // Disable all control buttons during action
          [startScriptBtn, stopScriptBtn, testPlexBtn].forEach(btn => { if(btn) btn.disabled = true; });
-         // Optionally show spinner on the clicked button
          const originalHtml = button.innerHTML;
          button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${actionName}...`;
 
          try {
              const response = await fetch(url, { method: 'POST' });
-             // Try to get JSON, but don't fail if it's not JSON
              let responseData = {};
-             try {
-                 responseData = await response.json();
-             } catch(e) {
-                 console.warn("SCRIPT: Response was not valid JSON, status:", response.status);
-             }
+             try { responseData = await response.json(); } catch(e) {}
 
              if (!response.ok) {
                  const errorMsg = responseData.message || responseData.error || `Request failed with status ${response.status}`;
                  throw new Error(errorMsg);
              }
              console.log(`SCRIPT: ${actionName} request successful.`);
-             // Backend should flash messages - we just update status
+             if (actionName === 'Test Plex' && responseData.message) {
+                 alert(`Plex Connection Test:\n${responseData.success ? '✅' : '❌'} ${responseData.message}`);
+             }
+
          } catch (error) {
              console.error(`SCRIPT: Error during ${actionName} action:`, error);
-             // Use alert for immediate feedback on action failure
              alert(`${actionName} Action Failed:\n${error.message}`);
          } finally {
-             // Restore button text
              button.innerHTML = originalHtml;
-             // Re-fetch status immediately to update UI and button states
-             await updateScriptStatus(); // updateScriptStatus handles re-enabling appropriate buttons
+             await updateScriptStatus();
          }
     }
 
-    if (startScriptBtn) {
-        startScriptBtn.addEventListener('click', () => handleControlClick(startScriptBtn, '/start', 'Start Script'));
-    }
-    if (stopScriptBtn) {
-         stopScriptBtn.addEventListener('click', () => handleControlClick(stopScriptBtn, '/stop', 'Stop Script'));
-    }
-    if (testPlexBtn) {
-        testPlexBtn.addEventListener('click', () => handleControlClick(testPlexBtn, '/test_plex', 'Test Plex'));
-    }
+    if (startScriptBtn) { startScriptBtn.addEventListener('click', () => handleControlClick(startScriptBtn, '/start', 'Start Script')); }
+    if (stopScriptBtn) { stopScriptBtn.addEventListener('click', () => handleControlClick(stopScriptBtn, '/stop', 'Stop Script')); }
+    if (testPlexBtn) { testPlexBtn.addEventListener('click', () => handleControlClick(testPlexBtn, '/test_plex', 'Test Plex')); }
 
-    // --- Dynamic Lists/Sections Listener (Updated for Categories) ---
+
+    // --- Dynamic Lists/Sections Listener (Updated Logic) ---
     console.log("SCRIPT: Setting up dynamic list/section listeners.");
     document.body.addEventListener('click', function(event) {
         try {
-            // --- Add Simple List Item ---
-            const addItemButton = event.target.closest('.add-item-btn:not(.nested-add)'); // Exclude nested adds here
+            // --- Add Simple List Item (e.g., Library Name, Exclusion) ---
+            const addItemButton = event.target.closest('.add-item-btn:not(.nested-add)');
             if (addItemButton) {
                 const targetListId = addItemButton.dataset.target;
                 const templateId = addItemButton.dataset.template;
@@ -344,106 +317,133 @@ document.addEventListener('DOMContentLoaded', function() {
                 const template = document.getElementById(templateId);
                 if (list && template) {
                     const clone = template.content.cloneNode(true);
+                    const input = clone.querySelector('input');
                     list.appendChild(clone);
+                    if(input) input.focus();
                     console.log(`SCRIPT: Added item to list ${targetListId}`);
                 } else {
                     console.error(`SCRIPT: Cannot find list (${targetListId}) or template (${templateId}) for simple item add`);
                 }
             }
 
-            // --- Add Category Section ---
+            // --- Add Category Section OR Special Collection Section ---
             const addSectionButton = event.target.closest('.add-section-btn');
             if (addSectionButton) {
-                const targetListId = addSectionButton.dataset.target; // e.g., "categories_Movies_list"
-                const templateId = addSectionButton.dataset.template;   // e.g., "category_template"
-                const library = addSectionButton.dataset.library;     // e.g., "Movies"
+                const targetListId = addSectionButton.dataset.target;
+                const templateId = addSectionButton.dataset.template;
+                // --- Add Logging Here ---
                 const list = document.getElementById(targetListId);
+                console.log(`SCRIPT: Attempting to find list element with ID '${targetListId}'. Found:`, list); // ADDED THIS LINE
                 const template = document.getElementById(templateId);
+                console.log(`SCRIPT: Attempting to find template element with ID '${templateId}'. Found:`, template); // ADDED THIS LINE
+                // --- End Add Logging ---
 
-                if (list && template && library) {
-                    // Sanitize library name for ID use (consistent with HTML)
-                    const safeLibraryName = library.replace(/ /g, '_').replace(/-/g, '_');
-                    // Determine the next index for the new category within this library
-                    const newIndex = list.querySelectorAll('.dynamic-section-item.category-item').length;
-                    console.log(`SCRIPT: Adding category section for library '${library}' (safe: ${safeLibraryName}), new index: ${newIndex}`);
+                console.log(`SCRIPT: Add Section clicked. Target: ${targetListId}, Template: ${templateId}`); // Existing log
 
-                    // Clone the template content
-                    let content = template.innerHTML;
-                    // Replace placeholders in the template HTML string
-                    content = content.replace(/{library}/g, library); // Use original name for input names
-                    content = content.replace(/{safe_library}/g, safeLibraryName); // Use safe name for IDs
-                    content = content.replace(/{index}/g, newIndex);
+                if (list && template) { // Check if list and template were found
+                    try {
+                        let newSectionElement = null;
 
-                    // Create a temporary wrapper to parse the HTML
-                    const wrapper = document.createElement('div');
-                    wrapper.innerHTML = content;
-                    const newSection = wrapper.firstElementChild; // Get the actual .dynamic-section-item div
+                        // --- DIFFERENTIATE LOGIC BASED ON TEMPLATE ---
+                        if (templateId === 'special_collections_template') {
+                            // --- Logic for adding Special Collection ---
+                            console.log("SCRIPT: Handling Add Special Period.");
+                            const clone = template.content.cloneNode(true);
+                            newSectionElement = clone.querySelector('.dynamic-section-item') || clone.firstElementChild || clone;
 
-                    if (newSection) {
-                        // Ensure the nested list and button inside the new section have correct IDs/data attributes
-                        const nestedList = newSection.querySelector('.dynamic-list-container.nested div[id*="_collections_list"]');
-                        if (nestedList) {
-                            nestedList.id = `category_${safeLibraryName}_${newIndex}_collections_list`;
-                            console.log(`SCRIPT: Updated nested list ID to: ${nestedList.id}`);
-                        } else { console.warn("SCRIPT: Could not find nested list div in new category template instance."); }
+                        } else if (templateId === 'category_template') {
+                            // --- Logic for adding Category (existing logic) ---
+                            console.log("SCRIPT: Handling Add Category.");
+                            const library = addSectionButton.dataset.library;
+                            if (!library) {
+                                console.error("SCRIPT: Cannot add category section, missing data-library attribute on button.");
+                                return;
+                            }
 
-                        const nestedAddButton = newSection.querySelector('.add-item-btn.nested-add');
-                        if (nestedAddButton) {
-                             nestedAddButton.dataset.target = `category_${safeLibraryName}_${newIndex}_collections_list`;
-                             nestedAddButton.dataset.library = library; // Keep original library name
-                             nestedAddButton.dataset.categoryIndex = newIndex; // Store the category index
-                             console.log(`SCRIPT: Updated nested add button target: ${nestedAddButton.dataset.target}, library: ${nestedAddButton.dataset.library}, index: ${nestedAddButton.dataset.categoryIndex}`);
-                        } else { console.warn("SCRIPT: Could not find nested add button in new category template instance."); }
+                            const safeLibraryName = library.replace(/ /g, '_').replace(/-/g, '_');
+                            const newIndex = list.querySelectorAll('.dynamic-section-item.category-item').length;
+                            console.log(`SCRIPT: Adding category for library '${library}' (safe: ${safeLibraryName}), new index: ${newIndex}`);
 
+                            let content = template.innerHTML;
+                            content = content.replace(/{library}/g, library);
+                            content = content.replace(/{safe_library}/g, safeLibraryName);
+                            content = content.replace(/{index}/g, newIndex);
 
-                        // Set the correct names for the main inputs in the new section
-                        const nameInput = newSection.querySelector(`input[name^="category_${library}_name"]`);
-                        if(nameInput) nameInput.name = `category_${library}_name[]`;
-                        const pinCountInput = newSection.querySelector(`input[name^="category_${library}_pin_count"]`);
-                        if(pinCountInput) pinCountInput.name = `category_${library}_pin_count[]`;
+                            const wrapper = document.createElement('div');
+                            wrapper.innerHTML = content;
+                            const tempSection = wrapper.firstElementChild;
 
-                         // Find the *first* collection input within this new section and set its name correctly
-                         const firstCollInput = newSection.querySelector(`.dynamic-list-item input[name*="_collections"]`);
-                         if (firstCollInput) {
-                             firstCollInput.name = `category_${library}_${newIndex}_collections[]`;
-                              console.log(`SCRIPT: Updated first collection input name in new section to: ${firstCollInput.name}`);
-                         } else { console.warn("SCRIPT: Could not find the initial collection input field in the new category section template instance.");}
+                            if (tempSection) {
+                                const nestedList = tempSection.querySelector('.dynamic-list-container.nested div[id*="_collections_list"]');
+                                if (nestedList) nestedList.id = `category_${safeLibraryName}_${newIndex}_collections_list`;
+                                else console.warn("SCRIPT: Could not find nested list div in new category template instance.");
 
+                                const nestedAddButton = tempSection.querySelector('.add-item-btn.nested-add');
+                                if (nestedAddButton) {
+                                     nestedAddButton.dataset.target = `category_${safeLibraryName}_${newIndex}_collections_list`;
+                                     nestedAddButton.dataset.library = library;
+                                     nestedAddButton.dataset.categoryIndex = newIndex;
+                                } else console.warn("SCRIPT: Could not find nested add button in new category template instance.");
 
-                        list.appendChild(newSection);
-                        console.log(`SCRIPT: Appended new category section to ${targetListId}`);
-                    } else {
-                        console.error("SCRIPT: Could not create new section element from template content:", content);
+                                const nameInput = tempSection.querySelector(`input[name^="category_${library}_name"]`);
+                                if(nameInput) nameInput.name = `category_${library}_name[]`;
+                                const pinCountInput = tempSection.querySelector(`input[name^="category_${library}_pin_count"]`);
+                                if(pinCountInput) pinCountInput.name = `category_${library}_pin_count[]`;
+
+                                const firstCollInput = tempSection.querySelector(`.dynamic-list-item input[name*="_collections"]`);
+                                if (firstCollInput) firstCollInput.name = `category_${library}_${newIndex}_collections[]`;
+                                else console.warn("SCRIPT: Could not find initial collection input in new category section template.");
+
+                                newSectionElement = tempSection;
+                            } else {
+                                console.error("SCRIPT: Could not create new category section element from template content:", content);
+                            }
+                        } else {
+                             console.warn(`SCRIPT: Unknown templateId ('${templateId}') encountered for add-section-btn.`);
+                             const clone = template.content.cloneNode(true);
+                             newSectionElement = clone.querySelector('.dynamic-section-item') || clone.firstElementChild || clone;
+                        }
+
+                        // --- Append the new section (if created successfully) ---
+                        if (newSectionElement && newSectionElement instanceof Node) {
+                            list.appendChild(newSectionElement);
+                            console.log(`SCRIPT: Appended new section to ${targetListId}`);
+                            const firstInput = newSectionElement.querySelector('input');
+                            if(firstInput) firstInput.focus();
+                        } else {
+                             console.error(`SCRIPT: Failed to create a valid new section element for template ${templateId}.`);
+                        }
+
+                    } catch (cloneError) {
+                        console.error(`SCRIPT: Error cloning/appending template ${templateId} for target ${targetListId}:`, cloneError);
                     }
                 } else {
-                    console.error(`SCRIPT: Cannot add section. Missing list (${targetListId}), template (${templateId}), or library (${library})`);
+                     // Simplified error message
+                    console.error(`SCRIPT: Cannot add section. Missing list element (ID: ${targetListId}) or template element (ID: ${templateId}).`);
                 }
-            }
+            } // End if (addSectionButton)
 
 
-             // --- Add Nested Collection Item (within a Category) ---
-             const addNestedItemButton = event.target.closest('.add-item-btn.nested-add');
-             if (addNestedItemButton) {
-                 const targetListId = addNestedItemButton.dataset.target;       // e.g., "category_Movies_0_collections_list"
-                 const templateId = addNestedItemButton.dataset.template;     // e.g., "category_collection_template"
-                 const library = addNestedItemButton.dataset.library;         // e.g., "Movies"
-                 const categoryIndex = addNestedItemButton.dataset.categoryIndex; // e.g., "0"
+            // --- Add Nested Collection Item (within a Category) ---
+            const addNestedItemButton = event.target.closest('.add-item-btn.nested-add');
+            if (addNestedItemButton) {
+                 const targetListId = addNestedItemButton.dataset.target;
+                 const templateId = addNestedItemButton.dataset.template;
+                 const library = addNestedItemButton.dataset.library;
+                 const categoryIndex = addNestedItemButton.dataset.categoryIndex;
                  const list = document.getElementById(targetListId);
                  const template = document.getElementById(templateId);
 
                  console.log(`SCRIPT: Adding nested item. Target: ${targetListId}, Template: ${templateId}, Library: ${library}, CatIndex: ${categoryIndex}`);
 
-
                  if (list && template && library !== undefined && categoryIndex !== undefined) {
-                     // Clone the nested item template
                      const clone = template.content.cloneNode(true);
-                     // Find the input within the clone
-                     const inputElement = clone.querySelector('input[name*="_collections[]"]'); // Find the input based on partial name
+                     const inputElement = clone.querySelector('input[name*="_collections[]"]');
                      if (inputElement) {
-                         // Construct the correct name: category_<library>_<cat_index>_collections[]
                          inputElement.name = `category_${library}_${categoryIndex}_collections[]`;
                          console.log(`SCRIPT: Set nested input name to: ${inputElement.name}`);
                          list.appendChild(clone);
+                         inputElement.focus();
                          console.log(`SCRIPT: Appended nested item to ${targetListId}`);
                      } else {
                           console.error("SCRIPT: Could not find input element within the nested item template clone:", template.innerHTML);
@@ -451,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function() {
                  } else {
                      console.error(`SCRIPT: Cannot add nested item. Missing list (${targetListId}), template (${templateId}), library (${library}), or category index (${categoryIndex})`);
                  }
-             }
+            } // End if (addNestedItemButton)
 
 
             // --- Remove Item (Simple or Nested) ---
@@ -459,43 +459,40 @@ document.addEventListener('DOMContentLoaded', function() {
             if (removeItemButton) {
                 const itemToRemove = removeItemButton.closest('.dynamic-list-item');
                 if (itemToRemove) {
-                     // Check if it's the last item in a nested list (optional: prevent removal?)
-                    // const parentList = itemToRemove.parentElement;
-                    // if (parentList && parentList.classList.contains('nested') && parentList.children.length === 1) {
-                    //     console.log("SCRIPT: Preventing removal of the last item in a nested list.");
-                    //     alert("Cannot remove the last collection title. Add another first or remove the category.");
-                    // } else {
-                         itemToRemove.remove();
-                         console.log("SCRIPT: Removed dynamic list item.");
-                    // }
+                    itemToRemove.remove();
+                    console.log("SCRIPT: Removed dynamic list item.");
+                } else {
+                    // Maybe it's removing a special collection section? (since its button now has remove-item-btn class)
+                     const sectionToRemove = removeItemButton.closest('.special-collection-item');
+                     if (sectionToRemove) {
+                         sectionToRemove.remove();
+                         console.log("SCRIPT: Removed special collection section item.");
+                     }
                 }
             }
 
-            // --- Remove Section (Category or Special) ---
+            // --- Remove Section (Category Only now) ---
             const removeSectionButton = event.target.closest('.remove-section-btn');
             if (removeSectionButton) {
-                const sectionToRemove = removeSectionButton.closest('.dynamic-section-item');
+                 // This button should only exist on category items now
+                const sectionToRemove = removeSectionButton.closest('.category-item'); // More specific selector
                 if (sectionToRemove) {
                     sectionToRemove.remove();
-                    console.log("SCRIPT: Removed dynamic section item.");
+                    console.log("SCRIPT: Removed dynamic category section item.");
                 }
             }
 
             // --- Toggle Section Visibility ---
             const toggleSectionButton = event.target.closest('.toggle-section-btn');
             if (toggleSectionButton) {
-                // Prevent toggling if clicking the theme button which might be inside a header
-                 if (event.target.closest('#theme-toggle-button')) {
-                     console.log("SCRIPT: Clicked theme toggle, ignoring section toggle.");
-                     return;
-                 }
+                 if (event.target.closest('#theme-toggle-button')) return;
                  console.log("SCRIPT: Section toggle button clicked.");
-                const section = toggleSectionButton.closest('.form-section'); // Find parent form section
-                const content = section ? section.querySelector('.collapsible-content') : null; // Find content within that section
-                const icon = toggleSectionButton.querySelector('i'); // Find icon within the button
+                const section = toggleSectionButton.closest('.form-section');
+                const content = section ? section.querySelector('.collapsible-content') : null;
+                const icon = toggleSectionButton.querySelector('i');
 
                 if (content) {
-                     const isExpanded = content.style.display === 'block'; // Check current state
+                     const isExpanded = content.style.display === 'block';
                      if (isExpanded) {
                          console.log("SCRIPT: Collapsing section.");
                          content.style.display = 'none';
@@ -507,9 +504,7 @@ document.addEventListener('DOMContentLoaded', function() {
                          toggleSectionButton.setAttribute('aria-expanded', 'true');
                          if (icon) { icon.classList.remove('fa-chevron-down'); icon.classList.add('fa-chevron-up'); }
                      }
-                 } else {
-                     console.error("SCRIPT: Could not find collapsible content for section button.");
-                 }
+                 } else { console.error("SCRIPT: Could not find collapsible content for section button."); }
             }
         } catch (e) {
             console.error("SCRIPT: Error inside main body click listener:", e);
