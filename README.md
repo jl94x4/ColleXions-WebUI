@@ -65,14 +65,14 @@ A file titled ``selected_collections.json`` is created on first run and updated 
 ## Installation
 ## Docker Run
 
-docker run -d \
-  --name collexions-webui \
-  -p 2500:2500 \
-  -v /path/to/files/config:/app/config \
-  -v /path/to/files/logs:/app/logs \
-  -v /path/to/files:/app/data \
-  --restart unless-stopped \
-  jl94x4/collexions-web:latest
+> docker run -d \
+>  --name collexions-webui \
+>  -p 2500:2500 \
+>  -v /path/to/files/config:/app/config \
+>  -v /path/to/files/logs:/app/logs \
+>  -v /path/to/files:/app/data \
+>  --restart unless-stopped \
+>  jl94x4/collexions-web:latest
 
 ## Docker Compose
 
