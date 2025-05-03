@@ -321,15 +321,19 @@ def pin_collections(colls_to_pin, config, plex):
         if not hasattr(c, 'title') or not hasattr(c, 'key'): logging.warning(f"Skipping invalid collection: {c}"); continue
         title = c.title; items = "?"
         try:
+            # Get item count safely
             try: items = f"{c.childCount} Item{'s' if c.childCount != 1 else ''}"
-            except Exception: pass # Ignore count error
+            except Exception: pass # Ignore count error if needed
+
             logging.info(f"Pinning: '{title}' ({items})")
+            # Perform pin action
             try:
                  hub = c.visibility(); hub.promoteHome(); hub.promoteShared()
                  pinned_titles.append(title); logging.info(f" Pinned '{title}' successfully.")
-                 if webhook: send_discord_message(webhook, f"📌 Collection '**{title}**' with **({items})** pinned.")
+                 if webhook: send_discord_message(webhook, f"📌 Collection '**{title}**' with **{items}** pinned.")
             except Exception as pe: logging.error(f" Pin failed '{title}': {pe}"); continue # Skip label if pin fails
 
+            # Add label if configured and pin succeeded
             if label:
                 try: c.addLabel(label); logging.info(f" Added label '{label}' to '{title}'.")
                 except Exception as le: logging.error(f" Label add failed '{title}': {le}")
@@ -363,17 +367,17 @@ def unpin_collections(plex, lib_names, config):
     for lib_name in lib_names:
         if not isinstance(lib_name, str): logging.warning(f"Skipping invalid library name: {lib_name}"); continue
         try:
-            logging.info(f"Checking lib '{lib_name}'...");
+            logging.info(f"Checking lib '{lib_name}' for unpin...");
             lib = plex.library.section(lib_name); colls = lib.collections()
-            logging.info(f" Found {len(colls)} collections. Checking promotion status...")
+            logging.info(f" Found {len(colls)} collections. Checking promotion status & label...")
             processed = 0
             for c in colls:
                 processed += 1
-                if not hasattr(c, 'title') or not hasattr(c, 'key'): logging.warning(f" Skipping invalid collection object: {c}"); continue
+                if not hasattr(c, 'title') or not hasattr(c, 'key'): logging.warning(f" Skipping invalid collection object #{processed}"); continue
                 title = c.title
                 try:
                     hub = c.visibility()
-                    # Check internal attribute - assumes it exists and reflects promotion
+                    # Check internal attribute - this seems necessary for now
                     if hub and hub._promoted:
                         logging.debug(f" '{title}' is promoted. Checking label...")
                         labels = [l.tag.lower() for l in c.labels] if hasattr(c, 'labels') else []
@@ -388,7 +392,7 @@ def unpin_collections(plex, lib_names, config):
                                 logging.info(f" Unpinning/Unlabeling '{title}'...")
                                 # Remove Label First
                                 try:
-                                    c.removeLabel(label); logging.info(f"  Label removed.")
+                                    c.removeLabel(label); logging.info(f"  Label '{label}' removed.")
                                     labels_rem+=1
                                 except Exception as e: logging.error(f"  Label remove failed: {e}")
                                 # Then Demote
@@ -397,10 +401,11 @@ def unpin_collections(plex, lib_names, config):
                                     unpinned+=1
                                 except Exception as de: logging.error(f"  Demote failed: {de}")
                             except Exception as ue: logging.error(f" Error during unpin/unlabel for '{title}': {ue}", exc_info=True)
-                        # else: logging.debug(f" '{title}' is promoted but lacks label.")
-                    # else: logging.debug(f" '{title}' is not promoted.")
+                        else: logging.debug(f" '{title}' is promoted but lacks label '{label}'.")
+                    # else: logging.debug(f" '{title}' is not promoted.") # Can be noisy
                 except NotFound: logging.warning(f"Collection '{title}' not found during visibility check (deleted?).")
                 except AttributeError as ae:
+                     # Check if the error is specifically about _promoted missing
                      if '_promoted' in str(ae): logging.error(f" Error checking '{title}': `_promoted` attribute not found. Cannot determine status reliably.")
                      else: logging.error(f" Attribute Error checking '{title}': {ae}")
                 except Exception as ve: logging.error(f" Visibility/Processing error for '{title}': {ve}", exc_info=True)
@@ -453,7 +458,7 @@ def get_fully_excluded_collections(config, active_specials):
     logging.info(f"Explicit title exclusions: {explicit_set or 'None'}")
     all_special = get_all_special_collection_names(config); active_special = set(active_specials)
     inactive_special = all_special - active_special
-    if inactive_special: logging.info(f"Inactive special collections (also excluded): {inactive_special}")
+    if inactive_special: logging.info(f"Inactive special collections (also excluded from random/category): {inactive_special}")
     combined = explicit_set.union(inactive_special)
     logging.info(f"Total combined title exclusions (explicit + inactive special): {combined or 'None'}")
     return combined
@@ -468,9 +473,12 @@ def fill_with_random_collections(pool, slots):
     if selected: logging.info(f"Added random: {[getattr(c, 'title', '?') for c in selected]}")
     return selected
 
-
+# ========================================================================
+# ==                 MODIFIED filter_collections Function               ==
+# ========================================================================
 def filter_collections(config, all_collections_in_library, active_special_titles, library_pin_limit, library_name, selected_collections_history):
-    """Filters and selects pins based on priorities (Special > Category(Modes) > Random)."""
+    logging.info(">>>>>> RUNNING filter_collections - MODIFIED VERSION CHECK <<<<<<")
+    """Filters and selects pins based on priorities (Special > Category(Modes) > Random), excluding random picks from served categories.""" # Docstring updated
     logging.info(f"--- Filtering/Selection for '{library_name}' (Limit: {library_pin_limit}) ---")
 
     # --- Config Retrieval & Validation ---
@@ -490,131 +498,168 @@ def filter_collections(config, all_collections_in_library, active_special_titles
     for c in all_collections_in_library:
         if not hasattr(c, 'title') or not c.title: continue
         title = c.title; is_special = title in active_special_titles
+        # Check exclusions first
         if title in titles_excluded: logging.debug(f" Excluding '{title}' (Explicit/Inactive Special)."); continue
         if is_regex_excluded(title, regex_patterns): continue # Logged in function
+        # Check recency (only if not special)
         if not is_special and title in recent_pins: logging.debug(f" Excluding '{title}' (Recent Pin)."); continue
-        if not is_special: # Check item count only if not an active special
+        # Check item count (only if not special)
+        if not is_special:
             try:
                 item_count = c.childCount
-                if item_count < min_items: logging.debug(f" Excluding '{title}' (Low Item Count: {item_count} < {min_items})."); continue
-            except Exception as e: logging.warning(f" Could not get item count for '{title}': {e}. Including anyway."); # Include if count fails? Or exclude? Let's include.
+                if item_count < min_items:
+                    logging.debug(f" Excluding '{title}' (Low Item Count: {item_count} < {min_items})."); continue
+            except Exception as e:
+                logging.warning(f" Could not get item count for '{title}': {e}. Including collection anyway.") # Be lenient if count fails
+
         eligible_pool.append(c) # Passed all checks
 
     logging.info(f"Found {len(eligible_pool)} eligible collections after initial filtering.")
-    if not eligible_pool: return []
+    if not eligible_pool: return [] # Exit early if nothing is eligible
 
     # --- Priority Selection ---
     collections_to_pin = []; pinned_titles = set(); remaining_slots = library_pin_limit
     random.shuffle(eligible_pool) # Shuffle once for randomness within priorities
 
     # --- Priority 1: Specials ---
-    logging.info(f"Selection Step 1: Specials")
+    logging.info(f"Selection Step 1: Processing Active Special Collections")
     specials_found = []; pool_after_specials = [] # Pool for next steps
     for c in eligible_pool:
+        # Check if it's special, slots remain, and not already pinned
         if c.title in active_special_titles and remaining_slots > 0 and c.title not in pinned_titles:
             logging.info(f"  Selecting ACTIVE special: '{c.title}'")
             specials_found.append(c); pinned_titles.add(c.title); remaining_slots -= 1
         else:
             pool_after_specials.append(c) # Keep non-specials or already pinned/over limit specials
     collections_to_pin.extend(specials_found)
-    logging.info(f"Selected {len(specials_found)} specials. Slots left: {remaining_slots}")
+    logging.info(f"Selected {len(specials_found)} special(s). Slots left: {remaining_slots}")
 
-    # --- Priority 2: Categories (Conditional) ---
-    logging.info(f"Selection Step 2: Categories (Random Mode: {use_random_category_mode})")
+    # --- Priority 2: Categories (Conditional Logic) ---
+    logging.info(f"Selection Step 2: Processing Categories (Random Mode: {use_random_category_mode})")
     category_collections_found = [] # Store collections selected in this step
-    pool_after_categories = list(pool_after_specials) # Start with pool after specials, might get modified
+    pool_after_categories = list(pool_after_specials) # Default pool for random fill if categories are skipped/empty
+    served_category_names = set() # <<< Tracks categories from which items were picked
 
     if remaining_slots > 0:
-        # Get valid categories (pin_count > 0 and has collection titles)
         valid_cats = [cat for cat in library_categories_config if isinstance(cat,dict) and cat.get('pin_count',0)>0 and cat.get('collections')]
+
         if not valid_cats:
-            logging.info(f"  No valid categories found for '{library_name}'. Skipping category selection.")
-            # pool_after_categories remains pool_after_specials
+            logging.info(f"  No valid categories defined or found for '{library_name}'. Skipping category selection.")
         else:
             # --- Branch based on mode ---
             if use_random_category_mode:
-                # --- Mode ON: Decide whether to pick ONE random category OR skip ---
                 logging.info(f"  Random Mode: Checking skip chance ({skip_perc}%).")
-                # Check skip chance using configured percentage
                 if random.random() < (skip_perc / 100.0):
-                    logging.info("  Category selection SKIPPED (random chance occurred).")
-                    # pool_after_categories remains pool_after_specials
-                else: # Select ONE category
-                    logging.info(f"  Proceeding to select ONE random category from {len(valid_cats)}.")
+                    logging.info("  Category selection SKIPPED this cycle (random chance occurred).")
+                else:
+                    logging.info(f"  Proceeding to select ONE random category from {len(valid_cats)} valid options.")
                     chosen_cat = random.choice(valid_cats)
                     cat_name=chosen_cat.get('category_name','Unnamed Category'); cat_count=chosen_cat.get('pin_count',0); cat_titles=chosen_cat.get('collections',[])
-                    logging.info(f"  Randomly chose: '{cat_name}' (Count: {cat_count}, Titles: {len(cat_titles)})")
+                    logging.info(f"  Randomly chose category: '{cat_name}' (Pin Count: {cat_count}, Titles Defined: {len(cat_titles)})")
 
                     eligible_chosen = []; temp_pool = []; processed_in_chosen = set()
-                    # Iterate the pool remaining *after specials*
                     for c in pool_after_specials:
-                        if c.title in cat_titles and c.title not in pinned_titles: # Check if eligible for chosen category
+                        if c.title in cat_titles and c.title not in pinned_titles:
                             eligible_chosen.append(c)
                         else:
-                            temp_pool.append(c) # Keep for final random pool if not eligible
+                            temp_pool.append(c)
 
                     num_pick = min(cat_count, len(eligible_chosen), remaining_slots)
-                    logging.info(f"  Attempting {num_pick} item(s) from '{cat_name}' (Eligible: {len(eligible_chosen)}, Slots Left: {remaining_slots}).")
+                    logging.info(f"  Attempting to select {num_pick} item(s) from '{cat_name}' (Eligible Found: {len(eligible_chosen)}, Slots Left: {remaining_slots}).")
                     if num_pick > 0:
-                        random.shuffle(eligible_chosen); selected_cat = eligible_chosen[:num_pick]
-                        category_collections_found.extend(selected_cat) # Add to items pinned in this step
+                        random.shuffle(eligible_chosen)
+                        selected_cat = eligible_chosen[:num_pick]
+                        category_collections_found.extend(selected_cat)
                         new_pins = {c.title for c in selected_cat}
                         pinned_titles.update(new_pins); remaining_slots -= len(selected_cat); processed_in_chosen.update(new_pins)
+                        served_category_names.add(cat_name) # <<< Record served category
                         logging.info(f"  Selected from '{cat_name}': {list(new_pins)}")
 
-                    # Update pool for final random fill: items not eligible + items eligible but not picked
                     pool_after_categories = temp_pool + [c for c in eligible_chosen if c.title not in processed_in_chosen]
-
             else:
                 # --- Mode OFF: Process ALL enabled categories (Default Logic) ---
                 logging.info(f"  Default Mode: Processing {len(valid_cats)} valid categories.")
-                cat_map = {}; slots_rem = {} # Map title to categories; track slots per category
+                cat_map = {}; slots_rem = {}
                 for cat in valid_cats:
-                    name = cat.get('category_name','?'); slots_rem[name] = cat['pin_count']
+                    name = cat.get('category_name','Unnamed Category'); slots_rem[name] = cat.get('pin_count', 0) # Use .get() for safety
                     for title in cat.get('collections', []): cat_map.setdefault(title, []).append(cat)
 
-                temp_pool_after_all_categories = [] # Items left for random fill
-                # Iterate through the pool *after specials* (already shuffled)
+                temp_pool_after_all_categories = []
                 for c in pool_after_specials:
                     title = c.title; picked = False
-                    if remaining_slots <= 0: temp_pool_after_all_categories.append(c); continue # Stop if no slots left globally
+                    if remaining_slots <= 0: temp_pool_after_all_categories.append(c); continue
 
-                    if title in cat_map: # Check if item belongs to any category
-                        # Iterate categories it belongs to (implicit random order due to pool shuffle)
-                        for cat_def in cat_map[title]:
-                            cat_name = cat_def['category_name']
-                            # Pick if category has slots and global slots remain
+                    if title in cat_map:
+                        for cat_def in cat_map.get(title, []): # Use .get() for safety
+                            cat_name = cat_def.get('category_name', 'Unnamed Category') # Use .get() for safety
                             if slots_rem.get(cat_name, 0) > 0 and remaining_slots > 0:
                                 logging.info(f"  Selecting '{title}' for category '{cat_name}'.")
                                 category_collections_found.append(c); pinned_titles.add(title)
                                 remaining_slots -= 1; slots_rem[cat_name] -= 1;
-                                picked = True; break # Picked for one category
+                                served_category_names.add(cat_name) # <<< Record served category
+                                picked = True; break
+                    if not picked: temp_pool_after_all_categories.append(c)
+                pool_after_categories = temp_pool_after_all_categories
 
-                    if not picked: temp_pool_after_all_categories.append(c) # Keep if not picked
-                pool_after_categories = temp_pool_after_all_categories # Update pool for random fill
+            collections_to_pin.extend(category_collections_found)
+            logging.info(f"Selected {len(category_collections_found)} collection(s) during category step. Slots left: {remaining_slots}")
+    else:
+         logging.info("Skipping category selection (no slots remaining).")
+         pool_after_categories = list(pool_after_specials)
 
-            # --- End branch based on mode ---
-            collections_to_pin.extend(category_collections_found) # Add collections found in this step
-            logging.info(f"Selected {len(category_collections_found)} collection(s) in category step. Slots left: {remaining_slots}")
+    # --- Priority 3: Random Fill (Exclude Served Category Items) --- <<< MODIFIED SECTION START
+    # This entire block calculates exclusions before random fill
 
-    else: # No slots remaining after specials
-        logging.info("Skipping category selection (no slots remaining).")
-        pool_after_categories = list(pool_after_specials) # Pass pool directly to random fill (will be skipped)
+    titles_in_served_categories = set()
+    if served_category_names:
+        # Log which categories contributed items and will now have their members excluded from random
+        logging.info(f"Categories served this cycle (items belonging to these will be excluded from random fill): {served_category_names}")
+        # Find all titles defined in the config for the served categories
+        for cat_config in library_categories_config:
+             # Check if the category config is valid and if its name was served
+             if isinstance(cat_config, dict) and cat_config.get('category_name') in served_category_names:
+                # Add all collections defined for this served category to the exclusion set
+                category_titles = cat_config.get('collections', [])
+                if isinstance(category_titles, list): # Ensure it's a list before updating
+                     titles_in_served_categories.update(t for t in category_titles if isinstance(t, str)) # Ensure titles are strings
 
-    # --- Priority 3: Random Fill (ALWAYS RUNS) ---
-    # Use the pool resulting from *after* the category step (pool_after_categories)
+        if titles_in_served_categories:
+            logging.info(f"Excluding {len(titles_in_served_categories)} titles belonging to served categories from random pool.")
+            # Optional: Log the actual titles being excluded (can be verbose)
+            # logging.debug(f"Titles excluded from random pool: {sorted(list(titles_in_served_categories))}")
+        else:
+             logging.info("No specific titles found listed under the served categories to exclude.")
+    # Else: No categories were served, so no exclusion needed based on categories.
+
+    # Filter the pool available for random fill
+    original_pool_size = len(pool_after_categories)
+    final_random_pool = [
+        c for c in pool_after_categories
+        if getattr(c, 'title', None) not in titles_in_served_categories
+    ]
+    # Log the result of the filtering
+    logging.info(f"Pool size for random fill after category exclusion: {len(final_random_pool)} (Original pool size before exclusion: {original_pool_size})")
+
+    # Proceed with random fill using the filtered pool
     if remaining_slots > 0:
-        logging.info(f"Selection Step 3: Random Fill ({remaining_slots} slots).")
-        random_found = fill_with_random_collections(pool_after_categories, remaining_slots)
+        logging.info(f"Selection Step 3: Filling remaining {remaining_slots} slot(s) randomly.")
+        # Use the potentially smaller, filtered pool
+        random_found = fill_with_random_collections(final_random_pool, remaining_slots)
         collections_to_pin.extend(random_found)
     else:
-        logging.info("Skipping random fill (no slots remaining).")
+        logging.info("Skipping random fill (no remaining slots).")
+
+    # --- <<< MODIFIED SECTION END ---
 
     # --- Final Result ---
-    final_titles = [getattr(c, 'title', '?') for c in collections_to_pin]
+    final_titles = [getattr(c, 'title', 'Untitled') for c in collections_to_pin]
     logging.info(f"--- Filtering/Selection Complete for '{library_name}' ---")
     logging.info(f"Final list ({len(final_titles)} items): {final_titles}")
     return collections_to_pin
+
+# ========================================================================
+# ==              End of MODIFIED filter_collections Function           ==
+# ========================================================================
 
 
 # --- Main Function ---
@@ -637,7 +682,8 @@ def main():
     history = load_selected_collections(); libs = config.get('library_names', [])
     if not libs: logging.warning("No libraries defined in config. Nothing to process."); return # Exit cycle if no libs
 
-    unpin_collections(plex, libs, config) # Unpin first
+    # --- Unpin First ---
+    unpin_collections(plex, libs, config)
 
     pin_limits = config.get('number_of_collections_to_pin', {});
     if not isinstance(pin_limits, dict): pin_limits = {}
@@ -657,10 +703,12 @@ def main():
         if not collections: logging.info(f"No collections found or retrieved from '{lib_name}'."); continue
 
         active_specials = get_active_special_collections(config)
+        # Call the modified filter_collections function
         to_pin = filter_collections(config, collections, active_specials, limit, lib_name, history)
 
         if to_pin:
-            pinned_now = pin_collections(to_pin, config, plex) # pin_collections returns list of successfully pinned titles
+            # Pin collections and get list of titles actually pinned
+            pinned_now = pin_collections(to_pin, config, plex)
             all_pinned_this_run.extend(pinned_now)
         else:
             logging.info(f"No collections selected for pinning in '{lib_name}' after filtering.")
@@ -671,9 +719,9 @@ def main():
     if all_pinned_this_run:
         timestamp = datetime.now().isoformat() # Use ISO format for keys
         unique_pins = set(all_pinned_this_run)
-        all_specials = get_all_special_collection_names(config)
+        all_specials_list = get_all_special_collection_names(config) # Get all titles ever defined as special
         # Only add non-special items to history for recency check
-        non_specials_pinned_this_run = sorted(list(unique_pins - all_specials))
+        non_specials_pinned_this_run = sorted(list(unique_pins - all_specials_list))
 
         if non_specials_pinned_this_run:
              # Make sure history is loaded (should be, but safety check)
@@ -736,6 +784,7 @@ def run_continuously():
         actual_sleep = sleep_s
         current_ts = datetime.now().timestamp()
 
+        # Calculate sleep duration based on planned next run, ensuring it's not negative
         if next_run_ts_planned and next_run_ts_planned > current_ts:
             actual_sleep = max(1, next_run_ts_planned - current_ts) # Sleep at least 1 sec
             sleep_until = datetime.fromtimestamp(next_run_ts_planned)
@@ -769,8 +818,8 @@ if __name__ == "__main__":
     try:
         # Perform initial setup checks if needed before starting loop
         logging.info("Collexions script starting up...")
-        # Maybe test config load once?
-        # test_config = load_config() # load_config exits on critical failure
+        # Test config load once at start? load_config() handles exit on critical failure.
+        # config = load_config() # Ensures config is valid before first run
 
         # Start the continuous loop
         run_continuously()
