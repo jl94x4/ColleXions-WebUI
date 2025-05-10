@@ -7,12 +7,12 @@ import os
 import sys
 import re
 import requests
-import copy
+import copy 
 from plexapi.server import PlexServer
 from plexapi.exceptions import NotFound, BadRequest, Unauthorized
 from datetime import datetime, timedelta
-import argparse # <--- ADDED FOR DRY-RUN ARGUMENT
-from jsonschema import validate, exceptions as jsonschema_exceptions # <--- ADDED FOR CONFIG VALIDATION
+import argparse
+from jsonschema import validate, exceptions as jsonschema_exceptions
 
 # --- Configuration & Constants (Updated for Docker) ---
 APP_DIR = '/app'
@@ -24,6 +24,7 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, 'config.json')
 LOG_FILE = os.path.join(LOG_DIR, 'collexions.log')
 SELECTED_COLLECTIONS_FILE = os.path.join(DATA_DIR, 'selected_collections.json')
 STATUS_FILE = os.path.join(DATA_DIR, 'status.json')
+LAST_PINNED_DETAILS_FILE = os.path.join(DATA_DIR, 'last_pinned_details.json')
 
 # --- Script-level global for Dry-Run Mode ---
 _DRY_RUN_MODE_ACTIVE = False
@@ -32,83 +33,40 @@ _DRY_RUN_MODE_ACTIVE = False
 CONFIG_SCHEMA = {
     "type": "object",
     "properties": {
-        "plex_url": {"type": "string", "format": "uri", "description": "Full URL to your Plex server (e.g., http://localhost:32400)."},
-        "plex_token": {"type": "string", "minLength": 1, "description": "Your Plex X-Plex-Token."},
-        "pinning_interval": {"type": "integer", "minimum": 1, "default": 180, "description": "Interval in minutes between pinning runs."},
-        "library_names": {
-            "type": "array",
-            "items": {"type": "string"},
-            "minItems": 0,
-            "default": [],
-            "description": "List of Plex library names to process."
-        },
-        "collexions_label": {"type": "string", "default": "Collexions", "description": "Label to apply to script-managed pinned collections."},
-        "number_of_collections_to_pin": {
-            "type": "object",
-            "additionalProperties": {"type": "integer", "minimum": 0},
-            "default": {},
-            "description": "Dictionary mapping library names to the number of collections to pin in that library."
-        },
-        "categories": {
-            "type": "object",
-            "additionalProperties": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "category_name": {"type": "string"},
-                        "collections": {"type": "array", "items": {"type": "string"}},
-                        "pin_count": {"type": "integer", "minimum": 0}
-                    },
-                    "required": ["category_name", "collections", "pin_count"]
-                }
-            },
-            "default": {},
-            "description": "Category definitions for targeted pinning."
-        },
-        "repeat_block_hours": {"type": "integer", "minimum": 0, "default": 12, "description": "Hours to wait before a non-special collection can be pinned again."},
-        "min_items_for_pinning": {"type": "integer", "minimum": 0, "default": 10, "description": "Minimum number of items a collection must have to be considered for pinning (unless it's an active special)."},
-        "discord_webhook_url": {"type": ["string", "null"], "format": "uri", "default": "", "description": "Discord webhook URL for notifications. Set to null or empty string to disable."},
-        "exclusion_list": {"type": "array", "items": {"type": "string"}, "default": [], "description": "List of collection titles to always exclude from pinning."},
-        "regex_exclusion_patterns": {"type": "array", "items": {"type": "string"}, "default": [], "description": "List of regex patterns to exclude collections if their titles match."},
-        "special_collections": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "start_date": {"type": "string", "pattern": "^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$", "description": "Start date (MM-DD) for special period."},
-                    "end_date": {"type": "string", "pattern": "^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$", "description": "End date (MM-DD) for special period."},
-                    "collection_names": {"type": "array", "items": {"type": "string"}, "minItems": 1}
-                },
-                "required": ["start_date", "end_date", "collection_names"]
-            },
-            "default": [],
-            "description": "Definitions for special collections active during specific date ranges."
-        },
-        "use_random_category_mode": {"type": "boolean", "default": False, "description": "Enable random category selection mode."},
-        "random_category_skip_percent": {"type": "integer", "minimum": 0, "maximum": 100, "default": 70, "description": "Percentage chance to skip category selection if random mode is active."}
+        "plex_url": {"type": "string", "format": "uri"},
+        "plex_token": {"type": "string", "minLength": 1},
+        "pinning_interval": {"type": "integer", "minimum": 1, "default": 180},
+        "library_names": {"type": "array", "items": {"type": "string"}, "minItems": 0, "default": []},
+        "collexions_label": {"type": "string", "default": "Collexions"},
+        "number_of_collections_to_pin": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}, "default": {}},
+        "categories": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "object", "properties": {"category_name": {"type": "string"}, "collections": {"type": "array", "items": {"type": "string"}}, "pin_count": {"type": "integer", "minimum": 0}}, "required": ["category_name", "collections", "pin_count"]}}, "default": {}},
+        "repeat_block_hours": {"type": "integer", "minimum": 0, "default": 12},
+        "min_items_for_pinning": {"type": "integer", "minimum": 0, "default": 10},
+        "discord_webhook_url": {"type": ["string", "null"], "format": "uri", "default": ""},
+        "exclusion_list": {"type": "array", "items": {"type": "string"}, "default": []},
+        "regex_exclusion_patterns": {"type": "array", "items": {"type": "string"}, "default": []},
+        "special_collections": {"type": "array", "items": {"type": "object", "properties": {"start_date": {"type": "string", "pattern": "^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"}, "end_date": {"type": "string", "pattern": "^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"}, "collection_names": {"type": "array", "items": {"type": "string"}, "minItems": 1}}, "required": ["start_date", "end_date", "collection_names"]}, "default": []},
+        "use_random_category_mode": {"type": "boolean", "default": False},
+        "random_category_skip_percent": {"type": "integer", "minimum": 0, "maximum": 100, "default": 70}
     },
     "required": ["plex_url", "plex_token"]
 }
-
 
 # --- Setup Logging ---
 if not os.path.exists(LOG_DIR):
     try:
         os.makedirs(LOG_DIR)
-        print(f"INFO: Log directory created at {LOG_DIR}") # Use print before logging is configured
+        print(f"INFO: Log directory created at {LOG_DIR}")
     except OSError as e:
         sys.stderr.write(f"CRITICAL: Error creating log directory '{LOG_DIR}': {e}. Exiting.\n")
         sys.exit(1)
-
 log_handlers = [logging.StreamHandler(sys.stdout)]
 try:
     log_handlers.append(logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8'))
 except Exception as e:
     sys.stderr.write(f"Warning: Error setting up file log handler for '{LOG_FILE}': {e}\n")
-
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.INFO, # Ensure level is INFO or DEBUG to see all logs
     format='%(asctime)s - %(levelname)s - [%(funcName)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S',
     handlers=log_handlers
@@ -126,11 +84,9 @@ def update_status(status_message="Running", next_run_timestamp=None):
         except OSError as e:
             logging.error(f"Could not create data directory {DATA_DIR}: {e}. Status update might fail.")
             return
-
     effective_status_message = status_message
     if _DRY_RUN_MODE_ACTIVE:
         effective_status_message = f"[DRY-RUN] {status_message}"
-
     status_data = {"status": effective_status_message, "last_update": datetime.now().isoformat()}
     if next_run_timestamp:
         if isinstance(next_run_timestamp, (int, float)):
@@ -144,6 +100,7 @@ def update_status(status_message="Running", next_run_timestamp=None):
         logging.error(f"Error writing status file '{STATUS_FILE}': {e}")
 
 # --- Functions ---
+# ... (load_selected_collections, save_selected_collections, get_recently_pinned_collections, is_regex_excluded, load_config, connect_to_plex, get_collections_from_library are assumed correct from previous versions) ...
 def load_selected_collections():
     if not os.path.exists(DATA_DIR):
         logging.warning(f"Data directory {DATA_DIR} not found when loading history. Assuming no history.")
@@ -171,15 +128,14 @@ def load_selected_collections():
         logging.info(f"History file {SELECTED_COLLECTIONS_FILE} not found. Starting fresh.")
         return {}
 
-
 def save_selected_collections(selected_collections):
     global _DRY_RUN_MODE_ACTIVE
     if _DRY_RUN_MODE_ACTIVE:
         logging.info(f"DRY-RUN: Would save {len(selected_collections)} entries to history file {SELECTED_COLLECTIONS_FILE}.")
         return
-
     if not os.path.exists(DATA_DIR):
         try:
+            logging.info(f"Data directory {DATA_DIR} does not exist. Attempting to create for saving history.")
             os.makedirs(DATA_DIR, exist_ok=True)
             logging.info(f"Created data directory before saving history: {DATA_DIR}")
         except OSError as e:
@@ -200,13 +156,11 @@ def get_recently_pinned_collections(selected_collections_history, config):
     if repeat_block_hours == 0:
         logging.info("Repeat block hours set to 0. Recency check disabled for non-special collections.")
         return set()
-
     cutoff_time = datetime.now() - timedelta(hours=repeat_block_hours)
     recent_titles = set()
     timestamps_to_keep = {}
     logging.info(f"Checking history since {cutoff_time.strftime('%Y-%m-%d %H:%M:%S')} for recently pinned non-special items (Repeat block: {repeat_block_hours} hours)")
     history_items_copy = list(selected_collections_history.items())
-
     for timestamp_str, titles in history_items_copy:
         if not isinstance(titles, list):
              logging.warning(f"Cleaning invalid history entry (value not a list): {timestamp_str}")
@@ -225,7 +179,6 @@ def get_recently_pinned_collections(selected_collections_history, config):
         except Exception as e:
              logging.error(f"Cleaning problematic history entry '{timestamp_str}': {e}. Entry removed.")
              selected_collections_history.pop(timestamp_str, None)
-
     keys_in_history = set(selected_collections_history.keys())
     keys_to_remove = keys_in_history - set(timestamps_to_keep.keys())
     removed_count = 0
@@ -234,13 +187,11 @@ def get_recently_pinned_collections(selected_collections_history, config):
             selected_collections_history.pop(key, None)
             removed_count += 1
         logging.info(f"Removed {removed_count} old entries from history file (in memory).")
-
     if recent_titles:
         logging.info(f"Recently pinned non-special collections (excluded due to {repeat_block_hours}h block): {sorted(list(recent_titles))}")
     else:
         logging.info("No recently pinned non-special collections found within the repeat block window.")
     return recent_titles
-
 
 def is_regex_excluded(title, patterns):
     if not patterns or not isinstance(patterns, list): return False
@@ -269,29 +220,24 @@ def load_config():
         except OSError as e:
              logging.critical(f"CRITICAL{' (DRY RUN)' if _DRY_RUN_MODE_ACTIVE else ''}: Error creating config directory '{CONFIG_DIR}': {e}. Exiting.")
              sys.exit(1)
-
     if not os.path.exists(CONFIG_PATH):
         logging.critical(f"CRITICAL{' (DRY RUN)' if _DRY_RUN_MODE_ACTIVE else ''}: Config file not found at {CONFIG_PATH}. Please create it and restart. Exiting.")
         sys.exit(1)
     try:
         with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
             config_data = json.load(f)
-
         validate(instance=config_data, schema=CONFIG_SCHEMA)
         logging.info("Configuration successfully validated against schema.")
-
         for prop, definition in CONFIG_SCHEMA.get("properties", {}).items():
             if "default" in definition and prop not in config_data:
                 config_data[prop] = definition["default"]
                 logging.debug(f"Applied schema default for '{prop}': {definition['default']}")
-        
         config_data.setdefault('library_names', [])
         config_data.setdefault('number_of_collections_to_pin', {})
         config_data.setdefault('categories', {})
         config_data.setdefault('exclusion_list', [])
         config_data.setdefault('regex_exclusion_patterns', [])
         config_data.setdefault('special_collections', [])
-
         if not isinstance(config_data.get('library_names'), list):
             logging.warning("Config 'library_names' is not a list after load/defaults. Resetting to empty list.")
             config_data['library_names'] = []
@@ -305,10 +251,8 @@ def load_config():
             try: clamped_perc = max(0, min(100, int(skip_perc)))
             except (ValueError, TypeError): pass
             config_data['random_category_skip_percent'] = clamped_perc
-
         logging.info("Configuration loaded, validated, and defaults applied.")
         return config_data
-
     except json.JSONDecodeError as e:
         logging.critical(f"CRITICAL{' (DRY RUN)' if _DRY_RUN_MODE_ACTIVE else ''}: Error decoding JSON from {CONFIG_PATH}: {e}. Exiting.")
         sys.exit(1)
@@ -319,7 +263,6 @@ def load_config():
     except Exception as e:
         logging.critical(f"CRITICAL{' (DRY RUN)' if _DRY_RUN_MODE_ACTIVE else ''}: An unexpected error occurred while loading config {CONFIG_PATH}: {e}. Exiting.", exc_info=True)
         sys.exit(1)
-
 
 def connect_to_plex(config):
     plex_url, token = config.get('plex_url'), config.get('plex_token')
@@ -343,51 +286,43 @@ def get_collections_from_library(plex, lib_name):
         logging.info(f"Accessing lib: '{lib_name}'"); lib = plex.library.section(lib_name)
         logging.info(f"Fetching collections from '{lib_name}'..."); colls = lib.collections()
         logging.info(f"Found {len(colls)} collections in '{lib_name}'."); return colls
-    except NotFound: logging.error(f"Library '{lib_name}' not found.") # Corrected error message for clarity
+    except NotFound: logging.error(f"Library '{lib_name}' not found.")
     except Exception as e: logging.error(f"Error fetching collections from library '{lib_name}': {e}", exc_info=True)
     return []
 
 def pin_collections(colls_to_pin, config, plex, library_name):
+    # ... (This function remains the same as your latest working version that returns detailed list) ...
     global _DRY_RUN_MODE_ACTIVE
     if not colls_to_pin: return []
     webhook_url = config.get('discord_webhook_url')
     label_to_add = config.get('collexions_label')
-    successfully_pinned_titles = []
+    pinned_item_details = []
     dry_run_prefix = "[DRY-RUN] " if _DRY_RUN_MODE_ACTIVE else ""
-
     logging.info(f"{dry_run_prefix}--- Attempting to Pin {len(colls_to_pin)} Collections (for library '{library_name}') ---")
-
     for c in colls_to_pin:
         if not hasattr(c, 'title') or not hasattr(c, 'key'):
             logging.warning(f"{dry_run_prefix}Skipping invalid collection object: {c}"); continue
-
         coll_title = c.title
         item_count_str = "?"
-
-        try: # Main try for processing this collection
-            try: # Nested try for item count
-                item_count = c.childCount
-                item_count_str = f"{item_count} Item{'s' if item_count != 1 else ''}"
-            except Exception:
-                logging.debug(f"{dry_run_prefix}Could not retrieve item count for '{coll_title}'.")
-
-            logging.info(f"{dry_run_prefix}Processing for pin: '{coll_title}' ({item_count_str}) from library '{library_name}'")
-
+        try:
+            item_count = c.childCount
+            item_count_str = f"{item_count} Item{'s' if item_count != 1 else ''}"
+        except Exception:
+            logging.debug(f"{dry_run_prefix}Could not retrieve item count for '{coll_title}'.")
+        current_item_details = {"title": coll_title, "items": item_count_str, "library": library_name}
+        try:
             if _DRY_RUN_MODE_ACTIVE:
                 logging.info(f"DRY-RUN: Would pin collection '{coll_title}'.")
-                discord_message = f"DRY-RUN: 📌 Collection '**{coll_title}**' ({item_count_str}) from **{library_name}** would be pinned."
+                discord_message = f"DRY-RUN: 📍 Collection '**{coll_title}**' ({item_count_str}) from **{library_name}** would be pinned."
             else:
                 hub = c.visibility()
                 hub.promoteHome()
                 hub.promoteShared()
                 logging.info(f"Pinned '{coll_title}' successfully.")
-                discord_message = f"📌 Collection '**{coll_title}**' ({item_count_str}) from **{library_name}** pinned successfully."
-
-            successfully_pinned_titles.append(coll_title)
-
+                discord_message = f"📍 Collection '**{coll_title}**' ({item_count_str}) from **{library_name}** pinned successfully."
+            pinned_item_details.append(current_item_details)
             if webhook_url:
                 send_discord_message(webhook_url, discord_message)
-
             if label_to_add:
                 if _DRY_RUN_MODE_ACTIVE:
                     logging.info(f"DRY-RUN: Would add label '{label_to_add}' to '{coll_title}'.")
@@ -398,30 +333,25 @@ def pin_collections(colls_to_pin, config, plex, library_name):
                         logging.info(f"Successfully added label '{label_to_add}' to '{coll_title}'.")
                     except Exception as label_error:
                         logging.error(f"Failed to add label '{label_to_add}' to '{coll_title}': {label_error}")
-        
         except NotFound:
-            logging.error(f"{dry_run_prefix}Collection '{coll_title}' not found during pin processing (maybe deleted?). Skipping.")
+            logging.error(f"{dry_run_prefix}Collection '{coll_title}' not found during pin processing. Skipping.")
         except Exception as e:
             logging.error(f"{dry_run_prefix}Unexpected error processing collection '{coll_title}' for pinning: {e}", exc_info=True)
-
-    logging.info(f"{dry_run_prefix}--- Pinning process complete. {'Would have processed' if _DRY_RUN_MODE_ACTIVE else 'Successfully processed'} {len(successfully_pinned_titles)} collections for potential pinning. ---")
-    return successfully_pinned_titles
-
+    logging.info(f"{dry_run_prefix}--- Pinning process complete. {'Would have processed' if _DRY_RUN_MODE_ACTIVE else 'Successfully processed'} {len(pinned_item_details)} collections for potential pinning. ---")
+    return pinned_item_details
 
 def send_discord_message(webhook_url, message):
+    # ... (This function remains the same) ...
     global _DRY_RUN_MODE_ACTIVE
     if _DRY_RUN_MODE_ACTIVE:
         logging.info(f"DRY-RUN: Would send Discord message: '{message[:150]}...'")
         return
-
     if not webhook_url or not isinstance(webhook_url, str) or not message:
         logging.debug("Discord webhook URL/message empty or invalid. Skipping.")
         return
-
     if len(message) > 2000:
         message = message[:1997] + "..."
         logging.warning("Discord message truncated to 2000 characters.")
-
     data = {"content": message}
     logging.info("Sending message to Discord webhook...")
     try:
@@ -435,27 +365,22 @@ def send_discord_message(webhook_url, message):
     except Exception as e:
         logging.error(f"An unexpected error occurred while sending Discord message: {e}")
 
-
 def unpin_collections(plex, lib_names, config):
+    # ... (This function remains the same) ...
     global _DRY_RUN_MODE_ACTIVE
     dry_run_prefix = "[DRY-RUN] " if _DRY_RUN_MODE_ACTIVE else ""
     if not plex:
         logging.error(f"{dry_run_prefix}Unpin skipped: No Plex connection."); return
-
     label_to_check = config.get('collexions_label')
     if not label_to_check:
         logging.warning(f"{dry_run_prefix}Unpin skipped: 'collexions_label' not defined in config."); return
-
     exclusion_set = set(config.get('exclusion_list', []))
-
     logging.info(f"{dry_run_prefix}--- Starting Unpin Check for Libraries: {lib_names} ---")
     logging.info(f"{dry_run_prefix}Looking for collections with label: '{label_to_check}'")
     logging.info(f"{dry_run_prefix}Will skip unpinning if title is in exclusion list: {exclusion_set or 'None'}")
-
     unpinned_count = 0
     label_removed_count = 0
     skipped_due_to_exclusion = 0
-
     for library_name in lib_names:
         if not isinstance(library_name, str) or not library_name.strip():
             logging.warning(f"{dry_run_prefix}Skipping invalid or empty library name during unpin: '{library_name}'"); continue
@@ -469,9 +394,8 @@ def unpin_collections(plex, lib_names, config):
                 processed_this_lib +=1
                 if not hasattr(collection, 'title') or not hasattr(collection, 'key'):
                     logging.warning(f"{dry_run_prefix}Skipping potentially invalid collection object #{processed_this_lib} in '{library_name}'"); continue
-                
                 coll_title = collection.title
-                try: # Inner try for operations on a single collection
+                try:
                     hub = collection.visibility()
                     if hub and hasattr(hub, '_promoted') and hub._promoted:
                         logging.debug(f"{dry_run_prefix}Collection '{coll_title}' is currently promoted. Checking label and exclusion...")
@@ -481,74 +405,51 @@ def unpin_collections(plex, lib_names, config):
                             if coll_title in exclusion_set:
                                 logging.info(f"{dry_run_prefix}Skipping unpin for '{coll_title}' (explicitly excluded).")
                                 skipped_due_to_exclusion += 1
-                                continue # to next collection
-                            
-                            # Proceed with unpin/unlabel
+                                continue
                             logging.info(f"{dry_run_prefix}Attempting to unpin and remove label from '{coll_title}'...")
                             if _DRY_RUN_MODE_ACTIVE:
                                 logging.info(f"DRY-RUN: Would remove label '{label_to_check}' from '{coll_title}'.")
                             else:
-                                try:
-                                    collection.removeLabel(label_to_check)
-                                    logging.info(f"Removed label '{label_to_check}' from '{coll_title}'.")
-                                except Exception as e_label:
-                                    logging.error(f"Failed to remove label '{label_to_check}' from '{coll_title}': {e_label}")
+                                try: collection.removeLabel(label_to_check); logging.info(f"Removed label '{label_to_check}' from '{coll_title}'.")
+                                except Exception as e_label: logging.error(f"Failed to remove label '{label_to_check}' from '{coll_title}': {e_label}")
                             label_removed_count += 1
-
                             if _DRY_RUN_MODE_ACTIVE:
                                 logging.info(f"DRY-RUN: Would unpin '{coll_title}'.")
                             else:
-                                try:
-                                    hub.demoteHome()
-                                    hub.demoteShared()
-                                    logging.info(f"Unpinned '{coll_title}' successfully.")
-                                except Exception as e_demote:
-                                    logging.error(f"Failed to demote/unpin '{coll_title}': {e_demote}")
+                                try: hub.demoteHome(); hub.demoteShared(); logging.info(f"Unpinned '{coll_title}' successfully.")
+                                except Exception as e_demote: logging.error(f"Failed to demote/unpin '{coll_title}': {e_demote}")
                             unpinned_count += 1
                         else:
                             logging.debug(f"{dry_run_prefix}Collection '{coll_title}' is promoted but does not have label. Skipping.")
-                    # else: logging.debug(f"{dry_run_prefix}Collection '{coll_title}' is not promoted. Skipping.")
-                except NotFound:
-                    logging.warning(f"{dry_run_prefix}Collection '{coll_title}' not found during visibility check (deleted?). Skipping.")
+                except NotFound: logging.warning(f"{dry_run_prefix}Collection '{coll_title}' not found during visibility check (deleted?). Skipping.")
                 except AttributeError as ae:
-                    if '_promoted' in str(ae).lower():
-                         logging.error(f"{dry_run_prefix}Error checking promotion for '{coll_title}': `_promoted` attribute not found on hub. Hub: {hub}")
-                    else:
-                         logging.error(f"{dry_run_prefix}AttributeError checking visibility/processing '{coll_title}' for unpin: {ae}", exc_info=True)
-                except Exception as vis_error:
-                    logging.error(f"{dry_run_prefix}Error checking visibility/processing '{coll_title}' for unpin: {vis_error}", exc_info=True)
+                    if '_promoted' in str(ae).lower(): logging.error(f"{dry_run_prefix}Error checking promotion for '{coll_title}': `_promoted` attribute not found on hub. Hub: {hub}")
+                    else: logging.error(f"{dry_run_prefix}AttributeError checking visibility/processing '{coll_title}' for unpin: {ae}", exc_info=True)
+                except Exception as vis_error: logging.error(f"{dry_run_prefix}Error checking visibility/processing '{coll_title}' for unpin: {vis_error}", exc_info=True)
             logging.info(f"{dry_run_prefix}Finished checking {processed_this_lib} collections in '{library_name}'.")
-        except NotFound:
-            logging.error(f"{dry_run_prefix}Library '{library_name}' not found during unpin check.")
-        except Exception as e:
-            logging.error(f"{dry_run_prefix}General error during unpin process for library '{library_name}': {e}", exc_info=True)
-
+        except NotFound: logging.error(f"{dry_run_prefix}Library '{library_name}' not found during unpin check.")
+        except Exception as e: logging.error(f"{dry_run_prefix}General error during unpin process for library '{library_name}': {e}", exc_info=True)
     logging.info(f"{dry_run_prefix}--- Unpinning Check Complete ---")
     logging.info(f"{dry_run_prefix}{'Would have unpinned' if _DRY_RUN_MODE_ACTIVE else 'Unpinned'}: {unpinned_count} collections.")
     logging.info(f"{dry_run_prefix}{'Would have removed label from' if _DRY_RUN_MODE_ACTIVE else 'Removed label from'}: {label_removed_count} collections.")
-    if skipped_due_to_exclusion > 0:
-        logging.info(f"{dry_run_prefix}Skipped unpinning for {skipped_due_to_exclusion} collections due to exclusion list.")
-
+    if skipped_due_to_exclusion > 0: logging.info(f"{dry_run_prefix}Skipped unpinning for {skipped_due_to_exclusion} collections due to exclusion list.")
 
 def get_active_special_collections(config):
+    # ... (This function remains the same) ...
     current_date = datetime.now().date()
     active_titles = []
     special_configs = config.get('special_collections', [])
-
-    if not isinstance(special_configs, list): # Schema should ensure this
+    if not isinstance(special_configs, list):
         logging.warning("Config 'special_collections' is not a list. No special collections will be processed.")
         return []
-
     logging.info(f"--- Checking {len(special_configs)} Special Collection Periods for today ({current_date.strftime('%Y-%m-%d')}) ---")
     for i, special in enumerate(special_configs):
         if not isinstance(special, dict) or not all(k in special for k in ['start_date', 'end_date', 'collection_names']):
              logging.warning(f"Skipping invalid special collection entry #{i+1} (missing keys/not dict): {special}")
              continue
-
         s_date_str = special.get('start_date')
         e_date_str = special.get('end_date')
         names = special.get('collection_names')
-
         if not (isinstance(s_date_str, str) and isinstance(e_date_str, str) and isinstance(names, list) and all(isinstance(n, str) and n.strip() for n in names)):
              logging.warning(f"Skipping invalid special collection entry #{i+1} (incorrect data types or empty names): {special}")
              continue
@@ -557,38 +458,34 @@ def get_active_special_collections(config):
             end_month_day = datetime.strptime(e_date_str, '%m-%d')
             start_date = start_month_day.replace(year=current_date.year).date()
             end_date = end_month_day.replace(year=current_date.year).date()
-
             is_active_period = (start_date <= current_date <= end_date) if start_date <= end_date else (current_date >= start_date or current_date <= end_date)
-            
             if is_active_period:
-                active_titles.extend(n for n in names if n) # Already checked for non-empty strings
+                active_titles.extend(n for n in names if n)
                 logging.info(f"Special period for collections '{names}' is ACTIVE today ({start_date.strftime('%m-%d')} to {end_date.strftime('%m-%d')}).")
-        except ValueError: # Catches strptime errors
+        except ValueError:
             logging.error(f"Invalid date format in special collection entry #{i+1}. Dates must be MM-DD. Entry: {special}")
         except Exception as e:
             logging.error(f"Error processing special collection entry #{i+1} ('{names}'): {e}", exc_info=True)
-
     unique_active = sorted(list(set(active_titles)))
     logging.info(f"--- Special Collection Check Complete ---")
     logging.info(f"Total unique ACTIVE special collection titles for today: {unique_active if unique_active else 'None'}")
     return unique_active
 
-
 def get_all_special_collection_names(config):
+    # ... (This function remains the same) ...
     all_special_titles = set()
-    special_configs = config.get('special_collections', []) # Schema ensures this is a list
+    special_configs = config.get('special_collections', [])
     for special in special_configs:
          if isinstance(special, dict) and 'collection_names' in special and isinstance(special['collection_names'], list):
              valid_names = {name.strip() for name in special['collection_names'] if isinstance(name, str) and name.strip()}
              all_special_titles.update(valid_names)
     return all_special_titles
 
-
 def get_fully_excluded_collections(config, active_special_collections):
-    exclusion_raw = config.get('exclusion_list', []) # Schema ensures this is a list
+    # ... (This function remains the same) ...
+    exclusion_raw = config.get('exclusion_list', [])
     explicit_exclusion_set = {name.strip() for name in exclusion_raw if isinstance(name, str) and name.strip()}
     logging.info(f"Explicit title exclusions from config: {explicit_exclusion_set or 'None'}")
-
     all_special_titles = get_all_special_collection_names(config)
     active_special_set = set(active_special_collections)
     inactive_special_set = all_special_titles - active_special_set
@@ -600,48 +497,65 @@ def get_fully_excluded_collections(config, active_special_collections):
     logging.info(f"Total combined title exclusions (explicit + inactive special): {combined_exclusion_set or 'None'}")
     return combined_exclusion_set
 
-
+# --- MODIFIED fill_with_random_collections with more logging ---
 def fill_with_random_collections(random_collections_pool, remaining_slots):
+    logging.debug(f"Entering fill_with_random_collections. Slots: {remaining_slots}, Pool size: {len(random_collections_pool) if random_collections_pool else 0}")
     collections_to_pin = []
     if remaining_slots <= 0:
-        logging.debug("No remaining slots for random selection.")
+        logging.debug("No remaining slots for random selection. Exiting fill_with_random_collections.")
         return collections_to_pin
     if not random_collections_pool:
-        logging.info("No eligible collections left in the pool for random selection.")
+        logging.info("No eligible collections left in the pool for random selection. Exiting fill_with_random_collections.")
         return collections_to_pin
-    available = list(random_collections_pool)
-    random.shuffle(available)
-    num_to_select = min(remaining_slots, len(available))
-    logging.info(f"Selecting up to {num_to_select} random collection(s) from the remaining {len(available)} eligible items.")
-    selected_random = available[:num_to_select]
-    collections_to_pin.extend(selected_random)
-    if selected_random:
-        selected_titles = [getattr(c, 'title', 'Untitled') for c in selected_random]
-        logging.info(f"Added {len(selected_titles)} random collection(s): {selected_titles}")
-    return collections_to_pin
 
+    try:
+        logging.debug(f"Type of random_collections_pool: {type(random_collections_pool)}")
+        # Ensure it's a list of actual Plex collection objects, not just titles
+        if random_collections_pool and not hasattr(random_collections_pool[0], 'title'):
+            logging.error("random_collections_pool does not appear to contain Plex objects. Cannot select.")
+            return []
+
+        available = list(random_collections_pool) # Make a copy to shuffle
+        logging.debug(f"Created 'available' list from pool. Size: {len(available)}")
+        
+        random.shuffle(available)
+        logging.debug("'available' list shuffled.")
+        
+        num_to_select = min(remaining_slots, len(available))
+        logging.info(f"Attempting to select {num_to_select} random collection(s) from {len(available)} available items.")
+        
+        if num_to_select > 0:
+            selected_random = available[:num_to_select]
+            collections_to_pin.extend(selected_random)
+            selected_titles = [getattr(c, 'title', 'Untitled') for c in selected_random]
+            logging.info(f"Added {len(selected_titles)} random collection(s): {selected_titles}")
+        else:
+            logging.info("No random collections were selected (num_to_select was 0).")
+            
+    except Exception as e:
+        logging.error(f"Error during fill_with_random_collections: {e}", exc_info=True)
+        return [] # Return empty list on error to prevent further issues
+
+    logging.debug(f"Exiting fill_with_random_collections. Returning {len(collections_to_pin)} items.")
+    return collections_to_pin
+# --- END MODIFIED fill_with_random_collections ---
 
 def filter_collections(config, all_collections_in_library, active_special_titles, library_pin_limit, library_name, selected_collections_history):
-    # Using the user's latest version of filter_collections from their uploaded ColleXions.py
+    # ... (This function remains the same as your latest working version) ...
     logging.info(f">>> Current filter_collections for LIBRARY: '{library_name}' <<<")
-
-    min_items = config.get('min_items_for_pinning', 10) # Default from schema
-    # Schema ensures min_items is int >= 0
+    min_items = config.get('min_items_for_pinning', 10)
     titles_excluded = get_fully_excluded_collections(config, active_special_titles)
     recent_pins = get_recently_pinned_collections(selected_collections_history, config)
-    regex_patterns = config.get('regex_exclusion_patterns', []) # Default from schema
-    use_random_category_mode = config.get('use_random_category_mode', False) # Default from schema
-    skip_perc = config.get('random_category_skip_percent', 70) # Default and range from schema
-
+    regex_patterns = config.get('regex_exclusion_patterns', [])
+    use_random_category_mode = config.get('use_random_category_mode', False)
+    skip_perc = config.get('random_category_skip_percent', 70)
     try:
         raw_categories_for_library = config.get('categories', {}).get(library_name, [])
         library_categories_config = copy.deepcopy(raw_categories_for_library)
     except Exception as e:
         logging.error(f"Error deepcopying categories for '{library_name}': {e}. Proceeding with empty categories.")
         library_categories_config = []
-
     logging.info(f"Filtering for '{library_name}': Min Items={min_items}, Random Cat Mode={use_random_category_mode}, Cat Skip Chance={skip_perc}%")
-
     eligible_pool = []
     logging.info(f"Processing {len(all_collections_in_library)} collections found in '{library_name}' through initial filters...")
     for c in all_collections_in_library:
@@ -650,7 +564,6 @@ def filter_collections(config, all_collections_in_library, active_special_titles
             continue
         title = c.title
         is_special = title in active_special_titles
-
         if title in titles_excluded:
             logging.debug(f" Excluding '{title}' (Reason: Explicit or Inactive Special Title Exclusion).")
             continue
@@ -672,17 +585,14 @@ def filter_collections(config, all_collections_in_library, active_special_titles
                 logging.warning(f" Excluding '{title}' due to error getting item count: {e}")
                 continue
         eligible_pool.append(c)
-
     logging.info(f"Found {len(eligible_pool)} eligible collections in '{library_name}' after initial filtering.")
     if not eligible_pool:
         logging.info(f"No collections eligible for pinning in '{library_name}'. Skipping priority selection.")
         return []
-
     collections_to_pin = []
     pinned_titles_this_run = set()
     remaining_slots = library_pin_limit
     random.shuffle(eligible_pool)
-
     logging.info(f"Selection Step 1: Prioritizing Active Special Collection(s) for '{library_name}'.")
     specials_selected_now = []
     pool_after_specials_processing = []
@@ -697,15 +607,12 @@ def filter_collections(config, all_collections_in_library, active_special_titles
             pool_after_specials_processing.append(c_item)
     collections_to_pin.extend(specials_selected_now)
     logging.info(f"Selected {len(specials_selected_now)} special collection(s). Remaining slots: {remaining_slots}")
-
     category_collections_selected_now = []
     pool_for_random_fill = list(pool_after_specials_processing)
     titles_from_served_categories_for_random_exclusion = set()
-
     if remaining_slots > 0 and library_categories_config:
         logging.info(f"Selection Step 2: Processing Categories for '{library_name}' (Random Mode: {use_random_category_mode}).")
         valid_categories_for_lib = [cat_dict for cat_dict in library_categories_config if isinstance(cat_dict, dict) and cat_dict.get('pin_count', 0) > 0 and cat_dict.get('collections')]
-
         if not valid_categories_for_lib:
             logging.info(f"  No valid (enabled and with collections) categories found for '{library_name}'.")
         else:
@@ -713,7 +620,6 @@ def filter_collections(config, all_collections_in_library, active_special_titles
                 for cat_conf in valid_categories_for_lib:
                     titles_from_served_categories_for_random_exclusion.update(cat_conf.get('collections', []))
                 logging.info(f"  Random Category Mode: {len(titles_from_served_categories_for_random_exclusion)} titles from all defined valid categories in '{library_name}' will be excluded from random fill.")
-
                 if random.random() < (skip_perc / 100.0):
                     logging.info(f"  Category selection SKIPPED for '{library_name}' due to {skip_perc}% chance.")
                 else:
@@ -728,165 +634,164 @@ def filter_collections(config, all_collections_in_library, active_special_titles
                         random.shuffle(eligible_for_this_cat)
                         picked_for_this_cat = eligible_for_this_cat[:num_to_pick_from_cat]
                         category_collections_selected_now.extend(picked_for_this_cat)
-                        for p_item in picked_for_this_cat: pinned_titles_this_run.add(p_item.title)
+                        for p_item in picked_for_this_cat: 
+                            pinned_titles_this_run.add(p_item.title)
                         remaining_slots -= len(picked_for_this_cat)
                         logging.info(f"  Selected {len(picked_for_this_cat)} item(s) from '{cat_name}': {[item.title for item in picked_for_this_cat]}")
-            else: # Default Category Mode
+            else: 
                 category_slots_remaining = {cat.get('category_name'): cat.get('pin_count',0) for cat in valid_categories_for_lib}
                 collection_to_category_map = {}
-                for cat_conf in valid_categories_for_lib:
+                for cat_conf in valid_categories_for_lib: 
                     cat_name_map = cat_conf.get('category_name')
-                    for title_in_cat in cat_conf.get('collections', []):
+                    for title_in_cat in cat_conf.get('collections', []): 
                         collection_to_category_map.setdefault(title_in_cat, []).append(cat_name_map)
                 temp_pool_after_default_categories = []
-                for c_item in pool_after_specials_processing:
+                for c_item in pool_after_specials_processing: 
                     item_title = c_item.title
                     picked_this_item_by_cat = False
-                    if remaining_slots <= 0:
+                    if remaining_slots <= 0: 
                         temp_pool_after_default_categories.append(c_item); continue
-                    if item_title in collection_to_category_map and item_title not in pinned_titles_this_run:
-                        for cat_name_item_belongs_to in collection_to_category_map[item_title]:
-                            if category_slots_remaining.get(cat_name_item_belongs_to, 0) > 0:
+                    if item_title in collection_to_category_map and item_title not in pinned_titles_this_run: 
+                        for cat_name_item_belongs_to in collection_to_category_map[item_title]: 
+                            if category_slots_remaining.get(cat_name_item_belongs_to, 0) > 0: 
                                 logging.info(f"  Selecting '{item_title}' for category '{cat_name_item_belongs_to}'.")
                                 category_collections_selected_now.append(c_item)
                                 pinned_titles_this_run.add(item_title)
                                 remaining_slots -= 1
                                 category_slots_remaining[cat_name_item_belongs_to] -= 1
-                                for cat_conf_detail in valid_categories_for_lib:
-                                    if cat_conf_detail.get('category_name') == cat_name_item_belongs_to:
+                                for cat_conf_detail in valid_categories_for_lib: 
+                                    if cat_conf_detail.get('category_name') == cat_name_item_belongs_to: 
                                         titles_from_served_categories_for_random_exclusion.update(cat_conf_detail.get('collections',[]))
-                                        break
-                                picked_this_item_by_cat = True
-                                break
-                    if not picked_this_item_by_cat:
+                                        break 
+                                picked_this_item_by_cat = True 
+                                break 
+                    if not picked_this_item_by_cat: 
                         temp_pool_after_default_categories.append(c_item)
-                pool_for_random_fill = temp_pool_after_default_categories
-            collections_to_pin.extend(category_collections_selected_now)
+                pool_for_random_fill = temp_pool_after_default_categories 
+            collections_to_pin.extend(category_collections_selected_now) 
             logging.info(f"Selected {len(category_collections_selected_now)} collection(s) from categories. Remaining slots: {remaining_slots}")
-    else:
+    else: 
         logging.info(f"Skipping category selection for '{library_name}' (Slots left: {remaining_slots}, Categories defined: {bool(library_categories_config)}).")
         pool_for_random_fill = list(pool_after_specials_processing)
-
     final_random_candidates = []
-    for item in pool_for_random_fill:
-        if item.title not in pinned_titles_this_run and item.title not in titles_from_served_categories_for_random_exclusion:
+    for item in pool_for_random_fill: 
+        if item.title not in pinned_titles_this_run and item.title not in titles_from_served_categories_for_random_exclusion: 
             final_random_candidates.append(item)
     logging.info(f"Pool for random fill (after category exclusions & already pinned items): {len(final_random_candidates)} items. Titles excluded due to category service: {len(titles_from_served_categories_for_random_exclusion)}")
-
+    
     if remaining_slots > 0:
         logging.info(f"Selection Step 3: Filling remaining {remaining_slots} slot(s) randomly for '{library_name}'.")
         random_selected_now = fill_with_random_collections(final_random_candidates, remaining_slots)
+        logging.debug(f"Result from fill_with_random_collections: {len(random_selected_now)} items.") # <--- ADDED DEBUG
         collections_to_pin.extend(random_selected_now)
-        remaining_slots -= len(random_selected_now)
     else:
         logging.info(f"Skipping random selection for '{library_name}' (no remaining slots).")
-
+    
     final_selected_titles = [getattr(c, 'title', 'Untitled') for c in collections_to_pin]
     logging.info(f"--- Filtering and Selection Complete for '{library_name}' ---")
     logging.info(f"Final list of {len(final_selected_titles)} collections selected for pinning: {final_selected_titles if final_selected_titles else 'None'}")
     return collections_to_pin
 
 # --- Main Function ---
+# ... (main function remains the same as your latest working version, including saving LAST_PINNED_DETAILS_FILE) ...
 def main():
     global _DRY_RUN_MODE_ACTIVE
     run_start_time = datetime.now()
     logging.info(f"====== Starting Collexions Script Run at {run_start_time.strftime('%Y-%m-%d %H:%M:%S')}{' (DRY RUN)' if _DRY_RUN_MODE_ACTIVE else ''} ======")
-
     try:
         config = load_config()
     except SystemExit:
         update_status("CRITICAL: Config Error")
         return
-
     pin_interval_minutes = config.get('pinning_interval', 180)
     next_run_calc_time = run_start_time + timedelta(minutes=pin_interval_minutes)
     logging.info(f"Pinning interval set to {pin_interval_minutes} minutes. Next run approximately: {next_run_calc_time.strftime('%Y-%m-%d %H:%M:%S')}")
     update_status("Running", next_run_calc_time.timestamp())
-
     plex = connect_to_plex(config)
     if not plex:
         logging.critical(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}Failed to connect to Plex. Aborting this run.")
         return
-
     selected_collections_history = load_selected_collections()
     library_names = config.get('library_names', [])
-
+    all_pinned_details_this_run = []
     if not library_names:
         logging.warning(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}No 'library_names' defined in config. Nothing to process for pinning/unpinning.")
     else:
         unpin_collections(plex, library_names, config)
-
     collections_per_library_config = config.get('number_of_collections_to_pin', {})
-    all_newly_pinned_titles_this_run = []
-
     for library_name in library_names:
         if not isinstance(library_name, str) or not library_name.strip():
             logging.warning(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}Skipping invalid or empty library name in list."); continue
-
         pin_limit = collections_per_library_config.get(library_name, 0)
         if not isinstance(pin_limit, int) or pin_limit < 0:
             logging.warning(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}Invalid pin limit for '{library_name}' ({pin_limit}). Defaulting to 0.")
             pin_limit = 0
-
         if pin_limit == 0:
             logging.info(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}Skipping library '{library_name}' as its pin limit is set to 0.")
             continue
-
         logging.info(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}===== Processing Library: '{library_name}' (Pin Limit: {pin_limit}) =====")
         update_status(f"Processing: {library_name}", next_run_calc_time.timestamp())
         library_process_start_time = time.time()
-
         all_colls_in_lib = get_collections_from_library(plex, library_name)
         if not all_colls_in_lib:
             logging.info(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}No collections found or retrieved from library '{library_name}'. Skipping pinning for this library.")
             continue
-
         active_specials = get_active_special_collections(config)
-        colls_to_pin_for_library = filter_collections(
+        colls_to_pin_for_library_objects = filter_collections(
             config, all_colls_in_lib, active_specials, pin_limit, library_name, selected_collections_history
         )
-
-        if colls_to_pin_for_library:
-            successfully_pinned_titles = pin_collections(colls_to_pin_for_library, config, plex, library_name)
-            all_newly_pinned_titles_this_run.extend(successfully_pinned_titles)
+        if colls_to_pin_for_library_objects:
+            pinned_item_details_for_library = pin_collections(colls_to_pin_for_library_objects, config, plex, library_name)
+            all_pinned_details_this_run.extend(pinned_item_details_for_library)
         else:
             logging.info(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}No collections were selected for pinning in '{library_name}' after filtering.")
-
         logging.info(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}Finished processing library '{library_name}' in {time.time() - library_process_start_time:.2f} seconds.")
         logging.info(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}===== Completed Library: '{library_name}' =====")
-
-    if all_newly_pinned_titles_this_run:
+    last_pinned_output = {
+        "run_mode": "DRY-RUN" if _DRY_RUN_MODE_ACTIVE else "NORMAL",
+        "timestamp": datetime.now().isoformat(),
+        "pinned_items": all_pinned_details_this_run
+    }
+    try:
+        logging.debug(f"Attempting to save last pinned details. DATA_DIR: {DATA_DIR}, File: {LAST_PINNED_DETAILS_FILE}")
+        if not os.path.exists(DATA_DIR):
+            logging.info(f"Data directory {DATA_DIR} does not exist. Attempting to create for last_pinned_details.")
+            os.makedirs(DATA_DIR, exist_ok=True)
+            logging.info(f"Data directory {DATA_DIR} created (or already existed).")
+        with open(LAST_PINNED_DETAILS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(last_pinned_output, f, ensure_ascii=False, indent=4)
+        logging.info(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}Saved last pinned details to {LAST_PINNED_DETAILS_FILE} ({len(all_pinned_details_this_run)} items).")
+    except Exception as e:
+        logging.error(f"Error saving last pinned details to {LAST_PINNED_DETAILS_FILE}: {e}", exc_info=True)
+    if all_pinned_details_this_run:
         current_timestamp_iso = datetime.now().isoformat()
-        unique_new_pins_all = set(all_newly_pinned_titles_this_run)
+        titles_processed_for_pinning = {item['title'] for item in all_pinned_details_this_run}
         all_special_titles_ever = get_all_special_collection_names(config)
-        non_special_pins_for_history = sorted(list(unique_new_pins_all - all_special_titles_ever))
-
+        non_special_pins_for_history = sorted(list(titles_processed_for_pinning - all_special_titles_ever))
         if non_special_pins_for_history:
             if not isinstance(selected_collections_history, dict): selected_collections_history = {}
             selected_collections_history[current_timestamp_iso] = non_special_pins_for_history
             save_selected_collections(selected_collections_history)
             logging.info(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}Updated history file for timestamp {current_timestamp_iso} with {len(non_special_pins_for_history)} non-special pinned items.")
-            num_specials_pinned = len(unique_new_pins_all) - len(non_special_pins_for_history)
+            num_specials_pinned = len(titles_processed_for_pinning) - len(non_special_pins_for_history)
             if num_specials_pinned > 0:
                  logging.info(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}Note: {num_specials_pinned} special collection(s) were {'processed for pinning' if _DRY_RUN_MODE_ACTIVE else 'pinned'} but not added to recency history tracking.")
         else:
              logging.info(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}Only special collections (or none) were {'processed' if _DRY_RUN_MODE_ACTIVE else 'successfully pinned'} this cycle. History file not updated for recency blocking.")
     else:
          logging.info(f"{'[DRY-RUN] ' if _DRY_RUN_MODE_ACTIVE else ''}Nothing was {'processed for pinning' if _DRY_RUN_MODE_ACTIVE else 'successfully pinned'} this cycle. History file not updated.")
-
     run_end_time = datetime.now()
     logging.info(f"====== Collexions Script Run Finished at {run_end_time.strftime('%Y-%m-%d %H:%M:%S')}{' (DRY RUN)' if _DRY_RUN_MODE_ACTIVE else ''} ======")
     logging.info(f"Total run duration: {run_end_time - run_start_time}")
 
-
 # --- Continuous Loop ---
+# ... (run_continuously function remains the same) ...
 def run_continuously():
     global _DRY_RUN_MODE_ACTIVE
     while True:
         run_cycle_start_time = datetime.now()
         next_run_ts_planned_for_status = None
         pin_interval_from_config_for_sleep = 180
-
         try:
             temp_config_for_interval = {}
             if os.path.exists(CONFIG_PATH):
@@ -895,17 +800,13 @@ def run_continuously():
                         temp_config_for_interval = json.load(f_temp)
                 except Exception as e_cfg_read:
                     logging.warning(f"Could not read config for interval pre-main(): {e_cfg_read}. Using default interval.")
-            
             current_pin_interval = temp_config_for_interval.get('pinning_interval', 180)
             if not isinstance(current_pin_interval, (int, float)) or current_pin_interval <= 0:
                 current_pin_interval = 180
             pin_interval_from_config_for_sleep = current_pin_interval
-            
             sleep_seconds_calc = pin_interval_from_config_for_sleep * 60
             next_run_ts_planned_for_status = (run_cycle_start_time + timedelta(seconds=sleep_seconds_calc)).timestamp()
-
             main()
-
         except KeyboardInterrupt:
             logging.info(f"Keyboard interrupt received. Exiting Collexions script.{' (DRY RUN was active)' if _DRY_RUN_MODE_ACTIVE else ''}")
             update_status("Stopped (Interrupt)")
@@ -916,26 +817,18 @@ def run_continuously():
         except Exception as e:
             logging.critical(f"CRITICAL UNHANDLED EXCEPTION in run_continuously loop: {e}", exc_info=True)
             update_status(f"CRASHED ({type(e).__name__})")
-            pin_interval_from_config_for_sleep = 1 # Sleep 1 minute (60s)
+            pin_interval_from_config_for_sleep = 1
             logging.error(f"Sleeping for {pin_interval_from_config_for_sleep*60} seconds before next attempt after crash.")
-            # Recalculate next_run_ts_planned_for_status for the short sleep after crash
             next_run_ts_planned_for_status = (datetime.now() + timedelta(seconds=pin_interval_from_config_for_sleep*60)).timestamp()
-
-
         seconds_to_next_ideal_start = 0
         if next_run_ts_planned_for_status:
             seconds_to_next_ideal_start = next_run_ts_planned_for_status - datetime.now().timestamp()
-        else: # Fallback if it was not set (e.g. after a crash and using default 60s sleep)
+        else:
             seconds_to_next_ideal_start = pin_interval_from_config_for_sleep * 60
-
-
         actual_sleep_duration = max(1, seconds_to_next_ideal_start)
-
         update_status(f"Sleeping ({pin_interval_from_config_for_sleep:.0f} min)", next_run_ts_planned_for_status)
         if next_run_ts_planned_for_status:
              logging.info(f"Next run scheduled around: {datetime.fromtimestamp(next_run_ts_planned_for_status).strftime('%Y-%m-%d %H:%M:%S')}")
-        # else: The crash scenario above will set a short sleep and new next_run_ts_planned_for_status
-
         logging.info(f"Sleeping for approximately {actual_sleep_duration:.0f} seconds...")
         try:
             time.sleep(actual_sleep_duration)
@@ -945,6 +838,7 @@ def run_continuously():
              break
 
 # --- Script Entry Point ---
+# ... (__main__ entry point remains the same) ...
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ColleXions Background Script")
     parser.add_argument(
@@ -953,16 +847,12 @@ if __name__ == "__main__":
         help="Run the script in dry-run mode: no changes will be made."
     )
     args = parser.parse_args()
-
     _DRY_RUN_MODE_ACTIVE = args.dry_run
-
     update_status("Initializing")
-
     if _DRY_RUN_MODE_ACTIVE:
         logging.info(">>>>>>>>>> COLLECTIONS SCRIPT IS STARTING IN DRY-RUN MODE <<<<<<<<<<")
     else:
         logging.info("Collexions script starting up in LIVE mode...")
-
     try:
         run_continuously()
     except SystemExit:
