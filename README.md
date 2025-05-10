@@ -67,7 +67,7 @@ A file titled ``selected_collections.json`` is created on first run and updated 
 
 > docker run -d \
 >   --name collexions-webui \
->   -p 2500:2500 \
+>   -p 5000:5000 \
 >   -v /path/to/files/config:/app/config \
 >   -v /path/to/files/logs:/app/logs \
 >   -v /path/to/files:/app/data \
