@@ -8,15 +8,12 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-{# Add id="the-body" for JS targeting #}
 <body id="the-body">
     <div class="container">
         <header>
-            {# --- Add Theme Toggle Button --- #}
             <button type="button" id="theme-toggle-button" class="theme-toggle-button" title="Toggle dark/light theme">
-                <i class="fas fa-moon"></i> {# Icon will be updated by JS #}
+                <i class="fas fa-moon"></i>
             </button>
-            {# --- End Theme Toggle Button --- #}
 
             <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ColleXions Logo" class="header-logo">
             <h1>ColleXions Configuration</h1>
@@ -30,18 +27,21 @@
                 {% endif %}
              {% endwith %}
 
-             {# --- Script Status & Controls --- #}
              <div class="status-controls">
                  <span id="script-status-indicator" class="status-indicator status-unknown" title="Current status of the background ColleXions.py script">?</span>
                  <span id="script-status-text">Checking status...</span>
                  <span id="next-run-countdown" class="countdown" title="Estimated time until the next automatic pinning cycle starts"></span>
+
                  <div class="control-buttons">
+                     <button type="button" id="dry-run-toggle-btn" class="control-btn dry-run-btn" title="Toggle Dry-Run Mode. When active (orange), script will simulate actions. Applied when 'Start Script' is clicked.">
+                         {-- <i class="fas fa-flask"></i> --}
+                         Dry-Run Mode
+                     </button>
                      <button type="button" id="start-script-btn" class="control-btn start" title="Start the ColleXions.py background script if it's stopped"><i class="fas fa-play"></i> Start</button>
                      <button type="button" id="stop-script-btn" class="control-btn stop" title="Stop the currently running ColleXions.py background script"><i class="fas fa-stop"></i> Stop</button>
                      <button type="button" id="test-plex-btn" class="control-btn test" title="Verify connection to the configured Plex server"><i class="fas fa-plug"></i> Test Plex</button>
                  </div>
              </div>
-             {# --- End Status & Controls --- #}
 
              <div class="view-buttons">
                 <button type="button" id="view-history-btn" class="view-btn" title="View selected_collections.json - shows recently pinned non-special collections used for the 'Repeat Block Hours' logic"><i class="fas fa-history"></i> View Pin History</button>
@@ -50,7 +50,6 @@
         </header>
 
         <form action="{{ url_for('index') }}" method="post" id="config-form">
-
             {# --- Plex Connection Section --- #}
             <section class="form-section">
                  <div class="section-header">
@@ -165,26 +164,19 @@
                       <button type="button" class="toggle-section-btn" aria-expanded="false" title="Toggle visibility"><i class="fas fa-chevron-down"></i></button>
                  </div>
                  <div class="collapsible-content" style="display: none;">
-
-                     {# --- Random Category Mode Options --- #}
                      <div class="form-group checkbox-group">
                          <label class="checkbox-label" for="use_random_category_mode">
                              <input type="checkbox" id="use_random_category_mode" name="use_random_category_mode" {% if config.get('use_random_category_mode') %}checked{% endif %}>
                              Use Random Category Mode
                          </label>
                      </div>
-                     <div class="form-group"> {# Wrap percentage input in form-group #}
+                     <div class="form-group">
                          <label for="random_category_skip_percent">Category Skip Chance (%):</label>
-                         {# Use number input, default to 70 if not set #}
                          <input type="number" id="random_category_skip_percent" name="random_category_skip_percent" value="{{ config.get('random_category_skip_percent', 70) }}" min="0" max="100" title="Percent chance (0-100) to skip category selection when Random Category Mode is active.">
                          <small>Applies only if 'Use Random Category Mode' is checked above.</small>
                          <small>Example: 70 means a 70% chance to skip category picking and a 30% chance to pick one random category.</small>
                      </div>
                      <small style="margin-top:15px; border-top:1px solid var(--border-color); padding-top: 10px;">Define categories per library and specify how many collections to pin from each.</small>
-                     {# --- END Random Category Mode Options --- #}
-
-
-                     {# Loop through libraries defined in the config #}
                      {% set libraries = config.get('library_names', []) %}
                      {% if libraries %}
                         {% for library_name in libraries %}
@@ -192,9 +184,8 @@
                             {% set safe_library_name = library_name.replace(' ', '_').replace('-', '_') %}
                             <h3>{{ library_name }} Library Categories</h3>
                              <div id="categories_{{ safe_library_name }}_list" class="dynamic-section-container">
-                                 {# Loop through existing categories for this library #}
                                  {% for category in config.get('categories', {}).get(library_name, []) %}
-                                 {% set category_index = loop.index0 %} {# Capture the category loop index #}
+                                 {% set category_index = loop.index0 %}
                                  <div class="dynamic-section-item category-item">
                                      <button type="button" class="remove-section-btn" title="Remove category"><i class="fas fa-times-circle"></i> Remove</button>
                                      <div class="form-group">
@@ -226,7 +217,7 @@
                                          </button>
                                      </div>
                                  </div>
-                                 {% endfor %} {# End category loop #}
+                                 {% endfor %}
                              </div>
                              <button type="button" class="add-section-btn"
                                      data-target="categories_{{ safe_library_name }}_list"
@@ -240,8 +231,7 @@
                      {% else %}
                          <p><em>Please add libraries in the 'Libraries & Pin Counts' section first to define categories for them.</em></p>
                      {% endif %}
-
-                 </div>{# End Collapsible Content #}
+                 </div>
             </section>
 
             <div class="form-actions">
@@ -250,18 +240,15 @@
                 </button>
             </div>
         </form>
-    </div>{# End Container #}
+    </div>
 
-    {# --- Modals --- #}
     <div id="history-modal" class="modal"> <div class="modal-content"><span class="close-modal-btn" data-target="history-modal" title="Close">&times;</span><h2>Pinning History</h2><div class="modal-body"><div class="loading-indicator" id="history-loading">Loading...<i class="fas fa-spinner fa-spin"></i></div><pre id="history-display"></pre></div></div></div>
     <div id="log-modal" class="modal"> <div class="modal-content wide"><span class="close-modal-btn" data-target="log-modal" title="Close">&times;</span><h2>Log File</h2><div class="modal-body"><div class="loading-indicator" id="log-loading">Loading...<i class="fas fa-spinner fa-spin"></i></div><pre id="log-display"></pre></div><div class="modal-footer"><button type="button" id="refresh-log-btn" class="view-btn small-btn" title="Reload log content"><i class="fas fa-sync-alt"></i> Refresh Log</button><p><small>Last ~250 lines.</small></p></div></div></div>
 
-    {# --- Templates --- #}
     <template id="library_names_template"><div class="dynamic-list-item"><input type="text" name="library_names[]" placeholder="Library Name" title="Plex library name"><button type="button" class="remove-item-btn" title="Remove"><i class="fas fa-minus-circle"></i></button></div></template>
     <template id="exclusion_list_template"><div class="dynamic-list-item"><input type="text" name="exclusion_list[]" placeholder="Exact Collection Title" title="Collection title"><button type="button" class="remove-item-btn" title="Remove"><i class="fas fa-minus-circle"></i></button></div></template>
     <template id="regex_exclusion_patterns_template"><div class="dynamic-list-item"><input type="text" name="regex_exclusion_patterns[]" placeholder="Regex Pattern" title="Regex pattern"><button type="button" class="remove-item-btn" title="Remove"><i class="fas fa-minus-circle"></i></button></div></template>
     <template id="number_of_collections_to_pin_template"><div class="dynamic-list-item key-value"><input type="text" name="pin_library_key[]" placeholder="Library Name" class="key-input" title="Library name"><input type="number" name="pin_library_value[]" placeholder="Count" min="0" class="value-input" title="Pin count"><button type="button" class="remove-item-btn" title="Remove"><i class="fas fa-minus-circle"></i></button></div></template>
-
     <template id="special_collections_template">
         <div class="dynamic-section-item special-collection-item">
             <div class="form-group"><label>Start (MM-DD):</label><input type="text" name="special_start_date[]" placeholder="MM-DD" pattern="\d{2}-\d{2}" required title="Start MM-DD"></div>
@@ -270,7 +257,6 @@
             <button type="button" class="remove-item-btn" title="Remove Special Period"><i class="fas fa-minus-circle"></i></button>
         </div>
     </template>
-
     <template id="category_template">
         <div class="dynamic-section-item category-item">
             <button type="button" class="remove-section-btn" title="Remove category"><i class="fas fa-times-circle"></i> Remove</button>
@@ -302,7 +288,6 @@
             </div>
         </div>
     </template>
-
     <template id="category_collection_template">
         <div class="dynamic-list-item">
             <input type="text" name="category_{library}_{category_index}_collections[]" placeholder="Exact Collection Title" title="Exact collection title">

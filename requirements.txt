@@ -1,5 +1,6 @@
 Flask
-plexapi 
+plexapi
 psutil
 requests
 waitress
+jsonschema
