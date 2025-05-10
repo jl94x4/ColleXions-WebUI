@@ -100,7 +100,7 @@ def update_status(status_message="Running", next_run_timestamp=None):
         logging.error(f"Error writing status file '{STATUS_FILE}': {e}")
 
 # --- Functions ---
-# ... (load_selected_collections, save_selected_collections, get_recently_pinned_collections, is_regex_excluded, load_config, connect_to_plex, get_collections_from_library are assumed correct from previous versions) ...
+# ... (load_selected_collections, save_selected_collections, get_recently_pinned_collections, is_regex_excluded, load_config, connect_to_plex, get_collections_from_library are assumed correct) ...
 def load_selected_collections():
     if not os.path.exists(DATA_DIR):
         logging.warning(f"Data directory {DATA_DIR} not found when loading history. Assuming no history.")
