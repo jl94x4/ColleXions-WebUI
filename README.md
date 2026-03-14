@@ -33,6 +33,7 @@ Whether you want to rotate trending movies, automatically pin seasonal collectio
 - 📊 **Insightful Dashboard**: track pinning history, view unique item stats, and monitor background sync jobs.
 - 🛡️ **Admin Security**: JWT-based authentication to keep your settings and Plex tokens secure.
 - 🐳 **Docker Ready**: Deploy in seconds using Docker Compose.
+- **Collection Creator**: Create bespoke Collections with our collections creator, supprting importation of Trakt Lists to automatically create collections on Plex + keep them up to date with our sync tool!
 
 ---
 - **Randomized Pinning:** ColleXions randomly selects collections to pin each cycle, ensuring that your home screen remains fresh and engaging. This randomness prevents the monotony of static collections, allowing users to discover new content easily.
