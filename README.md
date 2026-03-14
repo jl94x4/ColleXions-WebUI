@@ -114,22 +114,34 @@ A file titled ``selected_collections.json`` is created on first run and updated 
 
 ### 🐳 Option 1: Docker Compose (Recommended)
 
+#### **Using Docker Compose**
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/jl94x4/ColleXions-WebUI.git
    cd ColleXions-WebUI
    ```
-
 2. **Prepare your config:**
    ```bash
    cp config/config.example.json config/config.json
    ```
-
-3. **Launch with Docker Compose:**
+3. **Launch:**
    ```bash
    docker compose up -d
    ```
-   *The app will be available at `http://localhost:5000` (or your mapped port).*
+
+#### **Using Docker Run**
+If you prefer not to use compose, you can run the container directly:
+```bash
+docker run -d \
+  --name collexions \
+  -p 5000:5000 \
+  -v /path/to/your/config:/app/config \
+  -v /path/to/your/logs:/app/logs \
+  -e COLLEXIONS_SECRET_KEY=your_random_secret_key_here \
+  --restart unless-stopped \
+  jl94x4/collexionsui:latest
+```
+*The app will be available at `http://localhost:5000`.*
 
 ### 🐳 Option 2: Docker Run
 
