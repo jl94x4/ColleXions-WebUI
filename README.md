@@ -15,7 +15,7 @@
 
 **ColleXions** is a powerful, modern web interface designed to give you total control over your Plex Library collections. It combines intelligent automation with a beautiful management dashboard to ensure your Plex Home screen is always fresh, relevant, and stunning.
 
-Whether you want to rotate trending movies, automatically pin seasonal collections, or sync discovery lists from TMDB, Trakt, and MdbList—ColleXions handles it all.
+Whether you want to rotate trending movies, automatically pin seasonal collections, or sync discovery lists from TMDB, Trakt, and MdbList
 
 Create collections with our bespoke Collections Creator tool, instantly import Trakt lists + create them inside Plex and utilise our Sync tool to keep them up dated!
  
