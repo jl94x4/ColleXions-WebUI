@@ -1,0 +1,31 @@
+# User config & personal data (Plex tokens, API keys, history)
+config/
+data/
+.env*
+*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.pytest_cache/
+
+# React/Vite
+node_modules/
+dist/
+dist-ssr/
+*.log
+.eslintcache
+
+# Editor
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store

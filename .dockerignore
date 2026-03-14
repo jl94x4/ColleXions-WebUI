@@ -1,0 +1,41 @@
+# Build artifacts
+node_modules
+dist
+
+# User data — mounted as volumes, never baked into the image
+config/
+logs/
+data/
+*.log
+
+# Dev files
+.env
+.env.*
+*.local
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.suo
+*.sw?
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Git
+.git
+.gitignore
+
+# Temp / debug scripts
+check_api.py
+debug_*.py
+/tmp/

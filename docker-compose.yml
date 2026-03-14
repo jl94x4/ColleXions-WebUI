@@ -1,0 +1,16 @@
+services:
+  collexions:
+    image: jl94x4/collexionsui:latest
+    build: .
+    container_name: collexions
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      # All user data lives here - persisted on the host
+      - ./config:/app/config
+      - ./logs:/app/logs
+    environment:
+      # IMPORTANT: Replace with a strong random key (32+ chars).
+      # Generate one with: python -c "import secrets; print(secrets.token_hex(32))"
+      - COLLEXIONS_SECRET_KEY=replace-this-with-a-long-random-secret-key-32chars
