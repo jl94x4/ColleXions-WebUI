@@ -105,7 +105,7 @@ A file titled ``selected_collections.json`` is created on first run and updated 
 
 ## 🚀 Getting Started
 
-### 🐳 Option 1: Docker (Recommended)
+### 🐳 Option 1: Docker Compose (Recommended)
 
 1. **Clone the repository:**
    ```bash
@@ -123,6 +123,21 @@ A file titled ``selected_collections.json`` is created on first run and updated 
    docker compose up -d
    ```
    *The app will be available at `http://localhost:5000` (or your mapped port).*
+
+### 🐳 Option 2: Docker Run
+
+If you prefer not to use compose, you can run the container directly:
+```bash
+docker run -d \
+  --name collexions \
+  -p 5000:5000 \
+  -v /path/to/your/config:/app/config \
+  -v /path/to/your/logs:/app/logs \
+  -e COLLEXIONS_SECRET_KEY=your_random_secret_key_here \
+  --restart unless-stopped \
+  jl94x4/collexionsui:latest
+```
+*The app will be available at `http://localhost:5000`.*
 
 ---
 
