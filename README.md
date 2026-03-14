@@ -39,7 +39,7 @@ Create collections with our bespoke Collections Creator tool, instantly import T
 - 🛡️ **Admin Security**: JWT-based authentication to keep your settings and Plex tokens secure.
 - 🐳 **Docker Ready**: Deploy in seconds using Docker Compose.
 
-## ✨ Some Things ColleXions Can Do.
+## ✨ Some Things ColleXions Can Do
 - **Randomized Pinning:** ColleXions randomly selects collections to pin each cycle, ensuring that your home screen remains fresh and engaging. This randomness prevents the monotony of static collections, allowing users to discover new content easily.
 
 - **Special Occasion Collections:** Automatically prioritizes collections linked to specific dates, making sure seasonal themes are highlighted when appropriate.
