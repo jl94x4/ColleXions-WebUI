@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="assets/logo.png" width="150" alt="ColleXions Logo" />
   <width="100%" alt="ColleXions Banner" />
 
   # 🎬 ColleXions
