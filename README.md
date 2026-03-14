@@ -40,7 +40,8 @@ Create collections with our bespoke Collections Creator tool, instantly import T
  -  **Trakt.tv** (Trending, Anticipated, Personal Lists)
  -  **MdbList** (Custom community lists)
 - 📅 **Seasonal Specials**: Set-and-forget seasonal pinning (e.g., automatically pin "Halloween Horror" every October).
-- 🛠️ **Visual Collection Builder**: A robust UI to search, filter, and create new collections across all your libraries.
+- 🎨 **Advanced Collection Creator**: Easily build new collections by searching and importing directly from TMDb, Trakt, and more—complete with item filtering and smart collection support.
+- 🛠️ **Visual Library Manager**: A robust UI to view, edit, and manage existing collections across all your Plex libraries.
 - 📊 **Insightful Dashboard**: track pinning history, view unique item stats, and monitor background sync jobs.
 - 🛡️ **Admin Security**: JWT-based authentication to keep your settings and Plex tokens secure.
 - 🐳 **Docker Ready**: Deploy in seconds using Docker Compose.
