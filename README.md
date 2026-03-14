@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="" width="100%" alt="ColleXions Banner" />
+  <width="100%" alt="ColleXions Banner" />
 
   # 🎬 ColleXions
   **The Ultimate Plex Collection Manager & Automation Tool**
