@@ -36,9 +36,9 @@ Create collections with our bespoke Collections Creator tool, instantly import T
 - 🎡 **Automated Home Pinning**: Automatically rotate which collections are pinned to your Plex Home screen based on intervals you define.
 - ✨ **Advanced Collection Creator**: Easily build new collections by searching and importing directly from TMDb, Trakt, and more—complete with item filtering and smart collection support.
 - 🔄 **Multi-Source Auto-Sync**: Sync your Plex collections directly with dynamic lists from:
--  **TMDb** (Trending, Top Rated, Genre-based)
--  **Trakt.tv** (Trending, Anticipated, Personal Lists)
--  **MdbList** (Custom community lists)
+ -  **TMDb** (Trending, Top Rated, Genre-based)
+ -  **Trakt.tv** (Trending, Anticipated, Personal Lists)
+ -  **MdbList** (Custom community lists)
 - 📅 **Seasonal Specials**: Set-and-forget seasonal pinning (e.g., automatically pin "Halloween Horror" every October).
 - 🛠️ **Visual Collection Builder**: A robust UI to search, filter, and create new collections across all your libraries.
 - 📊 **Insightful Dashboard**: track pinning history, view unique item stats, and monitor background sync jobs.
