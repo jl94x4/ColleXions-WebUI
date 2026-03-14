@@ -75,7 +75,7 @@ Create collections with our bespoke Collections Creator tool, instantly import T
 > [!TIP]
 > If you have more than 20 collections per category it is recommended to use ```true```
 
-## **NEW** Regex Keyword Filtering
+## Regex Keyword Filtering
 
 - **Regex Filter:** Collexions now includes an option inside the config to filter out key words for collections to be excluded from being selected for being pinned. An example of this would be a Movie collection, such as "The Fast & The Furious Collection, The Mean Girls Collection and "The Matrix Collection" - by using the word "Collection" as a regex filter it would make all collections using this word be excluded from being able to be selected for pinning. Please see updated Config file new section!
 
