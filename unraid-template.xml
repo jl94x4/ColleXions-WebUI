@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>ColleXions</Name>
+  <Repository>jl94x4/collexionsui:latest</Repository>
+  <Registry>https://hub.docker.com/r/jl94x4/collexionsui</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/jl94x4/ColleXions-WebUI</Support>
+  <Project>https://github.com/jl94x4/ColleXions-WebUI</Project>
+  <Overview>ColleXions is a powerful web interface designed to automate and manage your Plex collections. It can rotate pinned collections, sync with TMDB/Trakt/MdbList, and create new collections through a beautiful UI.</Overview>
+  <Category>MediaApp:Video MediaServer:Video</Category>
+  <WebUI>http://[IP]:[PORT:5000]</WebUI>
+  <TemplateURL/>
+  <Icon>https://i.postimg.cc/kXRWPqyW/image.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Description>The Ultimate Plex Collection Manager &amp; Automation Tool</Description>
+  <Networking>
+    <Mode>bridge</Mode>
+    <Publish>
+      <Port>
+        <HostPort>5000</HostPort>
+        <ContainerPort>5000</ContainerPort>
+        <Protocol>tcp</Protocol>
+      </Port>
+    </Publish>
+  </Networking>
+  <Data>
+    <Volume>
+      <HostDir>/mnt/user/appdata/collexions/config</HostDir>
+      <ContainerDir>/app/config</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+    <Volume>
+      <HostDir>/mnt/user/appdata/collexions/logs</HostDir>
+      <ContainerDir>/app/logs</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+  </Data>
+  <Environment>
+    <Variable>
+      <Value>generate_a_random_secret_here</Value>
+      <Name>COLLEXIONS_SECRET_KEY</Name>
+      <Mode/>
+    </Variable>
+  </Environment>
+  <Labels/>
+  <Config Name="WebUI Port" Target="5000" Default="5000" Mode="tcp" Description="The port for the ColleXions Web interface." Type="Port" Display="always" Required="true" Mask="false">5000</Config>
+  <Config Name="Appdata Config" Target="/app/config" Default="/mnt/user/appdata/collexions/config" Mode="rw" Description="Path to store configuration files." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/collexions/config</Config>
+  <Config Name="Appdata Logs" Target="/app/logs" Default="/mnt/user/appdata/collexions/logs" Mode="rw" Description="Path to store application logs." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/collexions/logs</Config>
+  <Config Name="Secret Key" Target="COLLEXIONS_SECRET_KEY" Default="change_this_to_something_random" Mode="" Description="A secret key used for security and JWT tokens." Type="Variable" Display="always" Required="true" Mask="true">change_this_to_something_random</Config>
+</Container>
