@@ -17,6 +17,8 @@
 
 Whether you want to rotate trending movies, automatically pin seasonal collections, or sync discovery lists from TMDB, Trakt, and MdbList—ColleXions handles it all.
 
+https://i.postimg.cc/1Rqz9tbj/image.png
+
 ---
 
 ## ✨ Key Features
