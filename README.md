@@ -17,7 +17,8 @@
 
 Whether you want to rotate trending movies, automatically pin seasonal collections, or sync discovery lists from TMDB, Trakt, and MdbList—ColleXions handles it all.
 
-Use 
+Create collections with our bespoke Collections Creator tool, instantly import Trakt lists + create them inside Plex and utilise our Sync tool to keep them up dated!
+ 
 
 
 
