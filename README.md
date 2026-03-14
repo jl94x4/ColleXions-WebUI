@@ -57,32 +57,6 @@ Whether you want to rotate trending movies, automatically pin seasonal collectio
 
 ---
 
-### 💻 Option 2: Local Development
-
-#### **Prerequisites**
-- Node.js (v18+)
-- Python (v3.9+)
-
-1. **Setup Backend:**
-   ```bash
-   # Install Python dependencies
-   pip install -r requirements.txt
-   ```
-
-2. **Setup Frontend:**
-   ```bash
-   # Install Node dependencies
-   npm install
-   ```
-
-3. **Run in Development Mode:**
-   ```bash
-   # Start both frontend and backend concurrently
-   npm run dev
-   ```
-
----
-
 ## ⚙️ Configuration
 
 ColleXions uses a `config.json` file located in the `config/` directory.
