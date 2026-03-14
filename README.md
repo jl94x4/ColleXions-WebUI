@@ -11,6 +11,8 @@
 
 ---
 
+![App Screenshot](https://i.postimg.cc/kXRWPqyW/image.png)
+
 ## 🌟 Overview
 
 **ColleXions** is a powerful, modern web interface designed to give you total control over your Plex Library collections. It combines intelligent automation with a beautiful management dashboard to ensure your Plex Home screen is always fresh, relevant, and stunning.
