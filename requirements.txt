@@ -1,5 +1,0 @@
-Flask
-plexapi 
-psutil
-requests
-waitress
