@@ -1,5 +1,6 @@
 <div align="center">
-  <width="100%" alt="ColleXions Banner" />
+  <img src="assets/logo.png" width="150" alt="ColleXions Logo" />
+  <img src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" width="100%" alt="ColleXions Banner" />
 
   # 🎬 ColleXions
   **The Ultimate Plex Collection Manager & Automation Tool**

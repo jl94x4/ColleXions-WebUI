@@ -13,7 +13,7 @@
   <Category>MediaApp:Video MediaServer:Video</Category>
   <WebUI>http://[IP]:[PORT:5000]</WebUI>
   <TemplateURL/>
-  <Icon>https://i.postimg.cc/kXRWPqyW/image.png</Icon>
+  <Icon>https://raw.githubusercontent.com/jl94x4/ColleXions-WebUI/main/assets/logo.png</Icon>
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>
