@@ -17,23 +17,27 @@
 
 Whether you want to rotate trending movies, automatically pin seasonal collections, or sync discovery lists from TMDB, Trakt, and MdbList—ColleXions handles it all.
 
+Use 
+
 
 
 ---
 
 ## ✨ Key Features
 
+
 - 🎡 **Automated Home Pinning**: Automatically rotate which collections are pinned to your Plex Home screen based on intervals you define.
+- ✨ **Advanced Collection Creator**: Easily build new collections by searching and importing directly from TMDb, Trakt, and more—complete with item filtering and smart collection support.
 - 🔄 **Multi-Source Auto-Sync**: Sync your Plex collections directly with dynamic lists from:
-  - **TMDb** (Trending, Top Rated, Genre-based)
-  - **Trakt.tv** (Trending, Anticipated, Personal Lists)
-  - **MdbList** (Custom community lists)
+-  **TMDb** (Trending, Top Rated, Genre-based)
+-  **Trakt.tv** (Trending, Anticipated, Personal Lists)
+-  **MdbList** (Custom community lists)
 - 📅 **Seasonal Specials**: Set-and-forget seasonal pinning (e.g., automatically pin "Halloween Horror" every October).
 - 🛠️ **Visual Collection Builder**: A robust UI to search, filter, and create new collections across all your libraries.
 - 📊 **Insightful Dashboard**: track pinning history, view unique item stats, and monitor background sync jobs.
 - 🛡️ **Admin Security**: JWT-based authentication to keep your settings and Plex tokens secure.
 - 🐳 **Docker Ready**: Deploy in seconds using Docker Compose.
-- **Collection Creator**: Create bespoke Collections with our collections creator, supprting importation of Trakt Lists to automatically create collections on Plex + keep them up to date with our sync tool!
+- ✨ **Collection Creator**: Create bespoke Collections with our collections creator, supprting importation of Trakt Lists to automatically create collections on Plex + keep them up to date with our sync tool!
 
 ---
 - **Randomized Pinning:** ColleXions randomly selects collections to pin each cycle, ensuring that your home screen remains fresh and engaging. This randomness prevents the monotony of static collections, allowing users to discover new content easily.
