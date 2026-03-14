@@ -12,6 +12,9 @@
 ---
 
 ![App Screenshot](https://i.postimg.cc/kXRWPqyW/image.png)
+![App Screenshot](https://i.postimg.cc/V65d9WGQ/image.png)
+![App Screenshot](https://i.postimg.cc/htqQFxjs/image.png)
+
 
 ## 🌟 Overview
 
