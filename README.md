@@ -33,8 +33,6 @@ Whether you want to rotate trending movies, automatically pin seasonal collectio
 - 🐳 **Docker Ready**: Deploy in seconds using Docker Compose.
 
 ---
-
-## Key Features
 - **Randomized Pinning:** ColleXions randomly selects collections to pin each cycle, ensuring that your home screen remains fresh and engaging. This randomness prevents the monotony of static collections, allowing users to discover new content easily.
 
 - **Special Occasion Collections:** Automatically prioritizes collections linked to specific dates, making sure seasonal themes are highlighted when appropriate.
