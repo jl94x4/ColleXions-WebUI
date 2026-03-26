@@ -135,190 +135,6 @@ const ConfigPage: React.FC = () => {
     const exclusions = config.exclusion_list || [];
     const regexExclusions = config.regex_exclusion_patterns || [];
 
-    // --- SUB-EDITORS ---
-
-    // Library List Editor
-    const handleAddLibrary = () => {
-        const name = prompt("Enter Library Name (exact match from Plex):");
-        if (name && !libraries.includes(name)) {
-            setConfig(prev => ({
-                ...prev,
-                library_names: [...(prev.library_names || []), name],
-                number_of_collections_to_pin: { ...(prev.number_of_collections_to_pin || {}), [name]: 0 }
-            }));
-        }
-    };
-
-    const handleRemoveLibrary = (name: string) => {
-        if (confirm(`Remove library "${name}"?`)) {
-            setConfig(prev => {
-                const newLibs = (prev.library_names || []).filter(l => l !== name);
-                const newPins = { ...(prev.number_of_collections_to_pin || {}) };
-                delete newPins[name];
-                return { ...prev, library_names: newLibs, number_of_collections_to_pin: newPins };
-            });
-        }
-    };
-
-    const handlePinCountChange = (lib: string, val: string) => {
-        const num = parseInt(val) || 0;
-        setConfig(prev => ({
-            ...prev,
-            number_of_collections_to_pin: { ...(prev.number_of_collections_to_pin || {}), [lib]: num }
-        }));
-    };
-
-    // Array String Editor (Exclusions/Regex)
-    const ArrayEditor = ({ list = [], onChange, placeholder }: { list: string[], onChange: (l: string[]) => void, placeholder: string }) => {
-        const [input, setInput] = useState('');
-        const safeList = list || [];
-
-        const add = () => { if (input) { onChange([...safeList, input]); setInput(''); } };
-        const remove = (idx: number) => { onChange(safeList.filter((_, i) => i !== idx)); };
-
-        return (
-            <div className="space-y-3">
-                <div className="flex gap-2">
-                    <input
-                        className="flex-1 bg-slate-950/50 border border-slate-700/60 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-plex-orange/50 min-w-0"
-                        value={input}
-                        onChange={e => setInput(e.target.value)}
-                        placeholder={placeholder}
-                        onKeyDown={e => e.key === 'Enter' && add()}
-                    />
-                    <button onClick={add} className="bg-slate-800 hover:bg-slate-700 text-white px-3 rounded border border-slate-700/50 flex-shrink-0"><Plus className="w-4 h-4" /></button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {safeList.map((item, idx) => (
-                        <span key={idx} className="bg-slate-900/50 border border-slate-800 text-slate-300 text-xs md:text-sm px-2 py-1 rounded flex items-center gap-2 max-w-full truncate">
-                            <span className="truncate">{item}</span>
-                            <button onClick={() => remove(idx)} className="text-red-400 hover:text-red-300 flex-shrink-0"><Trash2 className="w-3 h-3" /></button>
-                        </span>
-                    ))}
-                    {safeList.length === 0 && <span className="text-slate-600 text-sm italic">No items</span>}
-                </div>
-            </div>
-        );
-    };
-
-    // Special Collections Editor
-    const handleAddSpecial = () => {
-        const newItem: SpecialCollection = { start_date: '12-01', end_date: '12-25', collection_names: ['Christmas Movies'] };
-        setConfig(prev => ({ ...prev, special_collections: [...(prev.special_collections || []), newItem] }));
-    };
-
-    const updateSpecial = (idx: number, field: keyof SpecialCollection, val: any) => {
-        const updated = [...(config.special_collections || [])];
-        updated[idx] = { ...updated[idx], [field]: val };
-        setConfig(prev => ({ ...prev, special_collections: updated }));
-    };
-
-    const updateSpecialCollNames = (idx: number, namesStr: string) => {
-        const names = namesStr.split(',').map(s => s.trim());
-        updateSpecial(idx, 'collection_names', names);
-    };
-
-    // Categories Editor
-    const CategoryEditor = () => {
-        const safeLibs = config.library_names || [];
-        const [selectedLib, setSelectedLib] = useState<string>('');
-
-        useEffect(() => {
-            if (!selectedLib && safeLibs.length > 0) {
-                setSelectedLib(safeLibs[0]);
-            }
-        }, [safeLibs, selectedLib]);
-
-        const currentLib = selectedLib || safeLibs[0] || '';
-
-        if (!currentLib) return <div className="text-slate-500 italic p-6 text-center border border-slate-800/50 rounded bg-slate-900/30">Please add libraries in the "Libraries" tab first.</div>;
-
-        const safeCats = config.categories || {};
-        const categories = safeCats[currentLib] || [];
-
-        const addCategory = () => {
-            const newCat: CategoryConfig = { category_name: 'New Category', pin_count: 1, collections: [] };
-            const updatedCats = [...categories, newCat];
-            setConfig(prev => ({ ...prev, categories: { ...(prev.categories || {}), [currentLib]: updatedCats } }));
-        };
-
-        const removeCategory = (idx: number) => {
-            const updatedCats = categories.filter((_, i) => i !== idx);
-            setConfig(prev => ({ ...prev, categories: { ...(prev.categories || {}), [currentLib]: updatedCats } }));
-        };
-
-        const updateCatField = (idx: number, field: keyof CategoryConfig, val: any) => {
-            const updatedCats = [...categories];
-            updatedCats[idx] = { ...updatedCats[idx], [field]: val };
-            setConfig(prev => ({ ...prev, categories: { ...(prev.categories || {}), [currentLib]: updatedCats } }));
-        };
-
-        return (
-            <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                    <div className="flex-1 w-full">
-                        <CustomSelect
-                            label="Select Library"
-                            value={currentLib}
-                            onChange={setSelectedLib}
-                            options={safeLibs.map(l => ({ label: l, value: l }))}
-                            tooltip="Choose which Plex library to manage categories for."
-                        />
-                    </div>
-                    <button onClick={addCategory} className="w-full sm:w-auto mt-auto flex items-center justify-center gap-2 bg-plex-orange text-white px-4 py-2 rounded-lg hover:bg-orange-600 shadow-lg shadow-orange-900/20 text-sm font-medium h-[42px]">
-                        <Plus className="w-4 h-4" /> Add Category
-                    </button>
-                </div>
-
-                <div className="space-y-4">
-                    {categories.length === 0 && <div className="p-8 text-center bg-slate-900/30 rounded border border-slate-800/50 border-dashed text-slate-500">No categories defined for {currentLib}</div>}
-
-                    {categories.map((cat, idx) => (
-                        <div key={idx} className="bg-slate-950/30 border border-slate-800/60 rounded-xl p-4 md:p-6 space-y-4">
-                            <div className="flex gap-4 items-start">
-                                <div className="flex-1 space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                                        <Input
-                                            label="Category Name"
-                                            value={cat.category_name}
-                                            onChange={e => updateCatField(idx, 'category_name', e.target.value)}
-                                            tooltip="A descriptive name for this category (e.g. 'Heroes', 'Scary Movies')."
-                                        />
-                                        <Input
-                                            label="Pin Count"
-                                            type="number"
-                                            value={cat.pin_count}
-                                            onChange={e => updateCatField(idx, 'pin_count', parseInt(e.target.value))}
-                                            tooltip="The maximum number of collections from this category to have pinned on your home screen at once."
-                                        />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-1.5 mb-1">
-                                            <label className="block text-sm font-medium text-slate-300">Collections (comma separated)</label>
-                                            <div className="relative leading-none">
-                                                <HelpCircle className="peer w-3.5 h-3.5 text-slate-500 hover:text-plex-orange cursor-help transition-colors" />
-                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900/95 border border-slate-700/50 rounded-lg text-[10px] text-slate-300 opacity-0 peer-hover:opacity-100 transition-all duration-200 pointer-events-none z-[100] shadow-2xl backdrop-blur-md font-normal leading-normal">
-                                                    Comma-separated list of collection names that belong to this category. Case sensitive.
-                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900/95" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <textarea
-                                            className="w-full bg-slate-950/50 border border-slate-700/60 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-plex-orange/50"
-                                            rows={2}
-                                            value={cat.collections.join(', ')}
-                                            onChange={e => updateCatField(idx, 'collections', e.target.value.split(',').map(s => s.trim()))}
-                                        />
-                                    </div>
-                                </div>
-                                <button onClick={() => removeCategory(idx)} className="text-slate-500 hover:text-red-500 mt-2 p-2 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 className="w-5 h-5" /></button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    };
 
     if (loading) return (
         <div className="flex h-96 items-center justify-center text-slate-400 flex-col gap-4">
@@ -489,7 +305,7 @@ const ConfigPage: React.FC = () => {
                 )}
 
                 {activeTab === 'libraries' && (
-                    <Card title="Managed Libraries" actions={<button onClick={handleAddLibrary} className="text-plex-orange hover:text-orange-400 text-sm font-bold flex items-center gap-1 transition-colors"><Plus className="w-4 h-4" /> Add Lib</button>}>
+                    <Card title="Managed Libraries" actions={<button onClick={() => handleAddLibrary(setConfig)} className="text-plex-orange hover:text-orange-400 text-sm font-bold flex items-center gap-1 transition-colors"><Plus className="w-4 h-4" /> Add Lib</button>}>
                         <div className="space-y-4">
                             {libraries.length === 0 && <p className="text-slate-500 italic text-center py-4">No libraries added yet.</p>}
                             {libraries.map(lib => (
@@ -502,10 +318,10 @@ const ConfigPage: React.FC = () => {
                                                 type="number"
                                                 className="w-12 bg-transparent border-none p-0 text-center text-white text-sm focus:ring-0"
                                                 value={pins[lib] || 0}
-                                                onChange={(e) => handlePinCountChange(lib, e.target.value)}
+                                                onChange={(e) => handlePinCountChange(lib, e.target.value, setConfig)}
                                             />
                                         </div>
-                                        <button onClick={() => handleRemoveLibrary(lib)} className="text-slate-500 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                        <button onClick={() => handleRemoveLibrary(lib, setConfig)} className="text-slate-500 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                                     </div>
                                 </div>
                             ))}
@@ -553,38 +369,7 @@ const ConfigPage: React.FC = () => {
                 )}
 
                 {activeTab === 'specials' && (
-                    <Card title="Special Event Collections" actions={<button onClick={handleAddSpecial} className="text-plex-orange hover:text-orange-400 text-sm font-bold flex items-center gap-1"><Plus className="w-4 h-4" /> Add Event</button>}>
-                        <div className="space-y-4">
-                            {specials.map((spec, idx) => (
-                                <div key={idx} className="bg-slate-950/30 border border-slate-800/60 p-4 md:p-6 rounded-xl space-y-4 relative group hover:border-slate-700/60 transition-colors">
-                                    <button
-                                        onClick={() => {
-                                            const updated = specials.filter((_, i) => i !== idx);
-                                            setConfig(prev => ({ ...prev, special_collections: updated }));
-                                        }}
-                                        className="absolute top-4 right-4 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-500/10 rounded-lg">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-
-                                    <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-                                        <div className="md:w-1/3 space-y-4">
-                                            <Input label="Start Date (MM-DD)" value={spec.start_date} onChange={e => updateSpecial(idx, 'start_date', e.target.value)} />
-                                            <Input label="End Date (MM-DD)" value={spec.end_date} onChange={e => updateSpecial(idx, 'end_date', e.target.value)} />
-                                        </div>
-                                        <div className="md:w-2/3">
-                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Collection Names (comma separated)</label>
-                                            <textarea
-                                                className="w-full bg-slate-950/50 border border-slate-700/60 rounded-lg p-3 text-sm text-slate-200 h-28 focus:outline-none focus:border-plex-orange/50"
-                                                value={(spec.collection_names || []).join(', ')}
-                                                onChange={e => updateSpecialCollNames(idx, e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                            {specials.length === 0 && <div className="text-center text-slate-500 py-8">No special events configured.</div>}
-                        </div>
-                    </Card>
+                    <SpecialEditor specials={specials} setConfig={setConfig} />
                 )}
 
                 {activeTab === 'categories' && (
@@ -596,7 +381,7 @@ const ConfigPage: React.FC = () => {
                                 In "Random Category Mode", the script will randomly pick one of these categories per run.
                             </p>
                         </div>
-                        <CategoryEditor />
+                        <CategoryEditor config={config} setConfig={setConfig} />
                     </Card>
                 )}
 
@@ -721,6 +506,233 @@ const ConfigPage: React.FC = () => {
                         </Card>
                     </div>
                 )}
+            </div>
+        </div>
+    );
+};
+
+// --- SUB-EDITORS ---
+
+// Library List Editor
+const handleAddLibrary = (setConfig: React.Dispatch<React.SetStateAction<AppConfig>>) => {
+    const name = prompt("Enter Library Name (exact match from Plex):");
+    if (name) {
+        setConfig(prev => {
+            const currentLibs = prev.library_names || [];
+            if (currentLibs.includes(name)) return prev;
+            return {
+                ...prev,
+                library_names: [...currentLibs, name],
+                number_of_collections_to_pin: { ...(prev.number_of_collections_to_pin || {}), [name]: 0 }
+            };
+        });
+    }
+};
+
+const handleRemoveLibrary = (name: string, setConfig: React.Dispatch<React.SetStateAction<AppConfig>>) => {
+    if (confirm(`Remove library "${name}"?`)) {
+        setConfig(prev => {
+            const newLibs = (prev.library_names || []).filter(l => l !== name);
+            const newPins = { ...(prev.number_of_collections_to_pin || {}) };
+            delete newPins[name];
+            return { ...prev, library_names: newLibs, number_of_collections_to_pin: newPins };
+        });
+    }
+};
+
+const handlePinCountChange = (lib: string, val: string, setConfig: React.Dispatch<React.SetStateAction<AppConfig>>) => {
+    const num = parseInt(val) || 0;
+    setConfig(prev => ({
+        ...prev,
+        number_of_collections_to_pin: { ...(prev.number_of_collections_to_pin || {}), [lib]: num }
+    }));
+};
+
+// Array String Editor (Exclusions/Regex)
+const ArrayEditor = ({ list = [], onChange, placeholder }: { list: string[], onChange: (l: string[]) => void, placeholder: string }) => {
+    const [input, setInput] = useState('');
+    const safeList = list || [];
+
+    const add = () => { if (input) { onChange([...safeList, input]); setInput(''); } };
+    const remove = (idx: number) => { onChange(safeList.filter((_, i) => i !== idx)); };
+
+    return (
+        <div className="space-y-3">
+            <div className="flex gap-2">
+                <input
+                    className="flex-1 bg-slate-950/50 border border-slate-700/60 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-plex-orange/50 min-w-0"
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    placeholder={placeholder}
+                    onKeyDown={e => e.key === 'Enter' && add()}
+                />
+                <button onClick={add} className="bg-slate-800 hover:bg-slate-700 text-white px-3 rounded border border-slate-700/50 flex-shrink-0"><Plus className="w-4 h-4" /></button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+                {safeList.map((item, idx) => (
+                    <span key={idx} className="bg-slate-900/50 border border-slate-800 text-slate-300 text-xs md:text-sm px-2 py-1 rounded flex items-center gap-2 max-w-full truncate">
+                        <span className="truncate">{item}</span>
+                        <button onClick={() => remove(idx)} className="text-red-400 hover:text-red-300 flex-shrink-0"><Trash2 className="w-3 h-3" /></button>
+                    </span>
+                ))}
+                {safeList.length === 0 && <span className="text-slate-600 text-sm italic">No items</span>}
+            </div>
+        </div>
+    );
+};
+
+// Special Collections Editor
+const SpecialEditor = ({ specials = [], setConfig }: { specials: SpecialCollection[], setConfig: React.Dispatch<React.SetStateAction<AppConfig>> }) => {
+    const handleAddSpecial = () => {
+        const newItem: SpecialCollection = { start_date: '12-01', end_date: '12-25', collection_names: ['Christmas Movies'] };
+        setConfig(prev => ({ ...prev, special_collections: [...(prev.special_collections || []), newItem] }));
+    };
+
+    const updateSpecial = (idx: number, field: keyof SpecialCollection, val: any) => {
+        const updated = [...specials];
+        updated[idx] = { ...updated[idx], [field]: val };
+        setConfig(prev => ({ ...prev, special_collections: updated }));
+    };
+
+    const updateSpecialCollNames = (idx: number, namesStr: string) => {
+        updateSpecial(idx, 'collection_names', namesStr.split(','));
+    };
+
+    return (
+        <Card title="Special Event Collections" actions={<button onClick={handleAddSpecial} className="text-plex-orange hover:text-orange-400 text-sm font-bold flex items-center gap-1"><Plus className="w-4 h-4" /> Add Event</button>}>
+            <div className="space-y-4">
+                {specials.map((spec, idx) => (
+                    <div key={idx} className="bg-slate-950/30 border border-slate-800/60 p-4 md:p-6 rounded-xl space-y-4 relative group hover:border-slate-700/60 transition-colors">
+                        <button
+                            onClick={() => {
+                                const updated = specials.filter((_, i) => i !== idx);
+                                setConfig(prev => ({ ...prev, special_collections: updated }));
+                            }}
+                            className="absolute top-4 right-4 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-500/10 rounded-lg">
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+
+                        <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+                            <div className="md:w-1/3 space-y-4">
+                                <Input label="Start Date (MM-DD)" value={spec.start_date} onChange={e => updateSpecial(idx, 'start_date', e.target.value)} />
+                                <Input label="End Date (MM-DD)" value={spec.end_date} onChange={e => updateSpecial(idx, 'end_date', e.target.value)} />
+                            </div>
+                            <div className="md:w-2/3">
+                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Collection Names (comma separated)</label>
+                                <textarea
+                                    className="w-full bg-slate-950/50 border border-slate-700/60 rounded-lg p-3 text-sm text-slate-200 h-28 focus:outline-none focus:border-plex-orange/50"
+                                    value={(spec.collection_names || []).join(',')}
+                                    onChange={e => updateSpecialCollNames(idx, e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+                {specials.length === 0 && <div className="text-center text-slate-500 py-8">No special events configured.</div>}
+            </div>
+        </Card>
+    );
+};
+
+// Categories Editor
+const CategoryEditor = ({ config, setConfig }: { config: AppConfig, setConfig: React.Dispatch<React.SetStateAction<AppConfig>> }) => {
+    const safeLibs = config.library_names || [];
+    const [selectedLib, setSelectedLib] = useState<string>('');
+
+    useEffect(() => {
+        if (!selectedLib && safeLibs.length > 0) {
+            setSelectedLib(safeLibs[0]);
+        }
+    }, [safeLibs, selectedLib]);
+
+    const currentLib = selectedLib || safeLibs[0] || '';
+
+    if (!currentLib) return <div className="text-slate-500 italic p-6 text-center border border-slate-800/50 rounded bg-slate-900/30">Please add libraries in the "Libraries" tab first.</div>;
+
+    const safeCats = config.categories || {};
+    const categories = safeCats[currentLib] || [];
+
+    const addCategory = () => {
+        const newCat: CategoryConfig = { category_name: 'New Category', pin_count: 1, collections: [] };
+        const updatedCats = [...categories, newCat];
+        setConfig(prev => ({ ...prev, categories: { ...(prev.categories || {}), [currentLib]: updatedCats } }));
+    };
+
+    const removeCategory = (idx: number) => {
+        const updatedCats = categories.filter((_, i) => i !== idx);
+        setConfig(prev => ({ ...prev, categories: { ...(prev.categories || {}), [currentLib]: updatedCats } }));
+    };
+
+    const updateCatField = (idx: number, field: keyof CategoryConfig, val: any) => {
+        const updatedCats = [...categories];
+        updatedCats[idx] = { ...updatedCats[idx], [field]: val };
+        setConfig(prev => ({ ...prev, categories: { ...(prev.categories || {}), [currentLib]: updatedCats } }));
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex-1 w-full">
+                    <CustomSelect
+                        label="Select Library"
+                        value={currentLib}
+                        onChange={setSelectedLib}
+                        options={safeLibs.map(l => ({ label: l, value: l }))}
+                        tooltip="Choose which Plex library to manage categories for."
+                    />
+                </div>
+                <button onClick={addCategory} className="w-full sm:w-auto mt-auto flex items-center justify-center gap-2 bg-plex-orange text-white px-4 py-2 rounded-lg hover:bg-orange-600 shadow-lg shadow-orange-900/20 text-sm font-medium h-[42px]">
+                    <Plus className="w-4 h-4" /> Add Category
+                </button>
+            </div>
+
+            <div className="space-y-4">
+                {categories.length === 0 && <div className="p-8 text-center bg-slate-900/30 rounded border border-slate-800/50 border-dashed text-slate-500">No categories defined for {currentLib}</div>}
+
+                {categories.map((cat, idx) => (
+                    <div key={`${currentLib}-cat-${idx}`} className="bg-slate-950/30 border border-slate-800/60 rounded-xl p-4 md:p-6 space-y-4">
+                        <div className="flex gap-4 items-start">
+                            <div className="flex-1 space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                                    <Input
+                                        label="Category Name"
+                                        value={cat.category_name}
+                                        onChange={e => updateCatField(idx, 'category_name', e.target.value)}
+                                        tooltip="A descriptive name for this category (e.g. 'Heroes', 'Scary Movies')."
+                                    />
+                                    <Input
+                                        label="Pin Count"
+                                        type="number"
+                                        value={cat.pin_count}
+                                        onChange={e => updateCatField(idx, 'pin_count', e.target.value ? parseInt(e.target.value) : 0)}
+                                        tooltip="The maximum number of collections from this category to have pinned on your home screen at once."
+                                    />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <label className="block text-sm font-medium text-slate-300">Collections (comma separated)</label>
+                                        <div className="relative leading-none">
+                                            <HelpCircle className="peer w-3.5 h-3.5 text-slate-500 hover:text-plex-orange cursor-help transition-colors" />
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900/95 border border-slate-700/50 rounded-lg text-[10px] text-slate-300 opacity-0 peer-hover:opacity-100 transition-all duration-200 pointer-events-none z-[100] shadow-2xl backdrop-blur-md font-normal leading-normal">
+                                                Comma-separated list of collection names that belong to this category. Case sensitive.
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900/95" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <textarea
+                                        className="w-full bg-slate-950/50 border border-slate-700/60 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-plex-orange/50"
+                                        rows={2}
+                                        value={cat.collections.join(',')}
+                                        onChange={e => {
+                                            updateCatField(idx, 'collections', e.target.value.split(','));
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                            <button onClick={() => removeCategory(idx)} className="text-slate-500 hover:text-red-500 mt-2 p-2 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 className="w-5 h-5" /></button>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );
