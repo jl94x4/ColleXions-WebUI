@@ -1,0 +1,5 @@
+{
+  "name": "Collexions Manager",
+  "description": "A modern Web UI to manage, configure, and monitor your Plex collection pinner script.",
+  "requestFramePermissions": []
+}

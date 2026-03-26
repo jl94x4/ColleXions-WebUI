@@ -1,31 +1,28 @@
-# User config & personal data (Plex tokens, API keys, history)
-config/
-data/
-.env*
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
 *.local
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-venv/
-.venv/
-.pytest_cache/
-
-# React/Vite
-node_modules/
-dist/
-dist-ssr/
-*.log
-.eslintcache
-
-# Editor
-.vscode/
+# Editor directories and files
+.vscode/*
 !.vscode/extensions.json
-.idea/
+.idea
+.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-.DS_Store
+
+# User config & personal data (Plex tokens, API keys, history)
+config/
+data/
