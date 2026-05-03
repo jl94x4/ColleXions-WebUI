@@ -44,6 +44,7 @@ process = None
 
 # --- Security ---
 SECRET_KEY = os.environ.get('COLLEXIONS_SECRET_KEY', 'dev-secret-key-replace-me-in-production')
+TRUE_ENV_VALUES = {'1', 'true', 'yes', 'on'}
 
 def require_auth(f):
     @wraps(f)
@@ -126,6 +127,21 @@ def save_config(new_data, merge=True):
     except Exception as e:
         logging.error(f"Failed to save config: {e}")
         return False
+
+def env_flag_enabled(name):
+    return os.environ.get(name, '').strip().lower() in TRUE_ENV_VALUES
+
+def config_ready_for_background_process():
+    """Avoid noisy autostart failures before onboarding has saved Plex details."""
+    config = load_config()
+    missing = [key for key in ('plex_url', 'plex_token') if not config.get(key)]
+    if missing:
+        logging.info(
+            "Background service autostart skipped; missing config fields: %s",
+            ", ".join(missing)
+        )
+        return False
+    return True
 
 def load_managed_collections():
     if os.path.exists(MANAGED_COLLECTIONS_FILE):
@@ -749,13 +765,15 @@ def start_background_process():
         return False, "Script is already running (external process detected)"
     
     # Check if script exists
-    if not os.path.exists(SCRIPT_NAME):
+    script_path = os.path.join(BASE_DIR, SCRIPT_NAME)
+    if not os.path.exists(script_path):
         return False, f"Script {SCRIPT_NAME} not found."
 
     try:
         # Start the script without redirection, as it handles its own logging to the same file
         process = subprocess.Popen(
-            [sys.executable, "-u", SCRIPT_NAME]
+            [sys.executable, "-u", script_path],
+            cwd=BASE_DIR
         )
         logging.info(f"Background process started with PID: {process.pid}")
             
@@ -771,6 +789,19 @@ def run_script():
     if not success:
         return jsonify({"error": result}), 400 if "running" in result else 404 if "not found" in result else 500
     return jsonify({"success": True, "pid": result})
+
+def maybe_autostart_background_process():
+    if not env_flag_enabled('COLLEXIONS_AUTOSTART'):
+        return
+
+    if not config_ready_for_background_process():
+        return
+
+    success, result = start_background_process()
+    if success:
+        logging.info(f"Background service autostarted with PID: {result}")
+    else:
+        logging.warning(f"Background service autostart skipped: {result}")
 
 # --- Plex Helpers ---
 _plex_cache = None
@@ -1948,6 +1979,8 @@ def verify_token():
         return jsonify({'authenticated': False}), 401
 
 
+
+maybe_autostart_background_process()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Production static file serving

@@ -14,3 +14,5 @@ services:
       # IMPORTANT: Replace with a strong random key (32+ chars).
       # Generate one with: python -c "import secrets; print(secrets.token_hex(32))"
       - COLLEXIONS_SECRET_KEY=replace-this-with-a-long-random-secret-key-32chars
+      # Start the background automation service when the container starts.
+      - COLLEXIONS_AUTOSTART=true
