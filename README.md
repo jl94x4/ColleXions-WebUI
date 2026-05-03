@@ -130,6 +130,11 @@ A file titled ``selected_collections.json`` is created on first run and updated 
    ```
    *The app will be available at `http://localhost:5000` (or your mapped port).*
 
+   The included compose file sets `COLLEXIONS_AUTOSTART=true`, so once your
+   Plex config has been saved, the background automation service starts again
+   whenever Docker starts or restarts the container. Set it to `false` or remove
+   the variable if you prefer to start the service manually from the Dashboard.
+
 ### 🐳 Option 2: Docker Run
 
 If you prefer not to use compose, you can run the container directly:
@@ -140,6 +145,7 @@ docker run -d \
   -v /path/to/your/config:/app/config \
   -v /path/to/your/logs:/app/logs \
   -e COLLEXIONS_SECRET_KEY=your_random_secret_key_here \
+  -e COLLEXIONS_AUTOSTART=true \
   --restart unless-stopped \
   jl94x4/collexionsui:latest
 ```
